@@ -3,14 +3,7 @@ import { submitResultAction, validateRoundAction } from "@/app/actions";
 
 const SET_NUMBERS = [1, 2, 3];
 
-function StatusBadge({ round }: { round: Round }) {
-  if (!round.match) {
-    return (
-      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-400">
-        da generare
-      </span>
-    );
-  }
+function StatusBadge({ round, isActive }: { round: Round; isActive: boolean }) {
   if (round.status === "VALIDATED") {
     return (
       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-primary/10 text-primary">
@@ -18,7 +11,14 @@ function StatusBadge({ round }: { round: Round }) {
       </span>
     );
   }
-  if (round.match.winnerTeam !== null) {
+  if (!isActive) {
+    return (
+      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-400">
+        in attesa
+      </span>
+    );
+  }
+  if (round.match && round.match.winnerTeam !== null) {
     return (
       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-100 text-amber-700">
         da convalidare
@@ -35,17 +35,20 @@ function StatusBadge({ round }: { round: Round }) {
 export function RoundMatchCard({
   round,
   numberToName,
+  isActive,
 }: {
   round: Round;
   numberToName: Map<number, string>;
+  isActive: boolean;
 }) {
   const name = (n: number) => numberToName.get(n) ?? `#${n}`;
+  const isLocked = !isActive && round.status !== "VALIDATED";
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-slate-900">Turno {round.roundNumber}</h3>
-        <StatusBadge round={round} />
+        <StatusBadge round={round} isActive={isActive} />
       </div>
 
       {!round.match ? (
@@ -77,7 +80,7 @@ export function RoundMatchCard({
                   max={7}
                   name={`set${n}team1`}
                   defaultValue={existing?.team1Games ?? ""}
-                  disabled={round.status === "VALIDATED"}
+                  disabled={isLocked || round.status === "VALIDATED"}
                   className="w-14 h-10 text-center border border-slate-200 rounded-lg disabled:bg-slate-50 disabled:text-slate-400"
                 />
               );
@@ -98,7 +101,7 @@ export function RoundMatchCard({
                   max={7}
                   name={`set${n}team2`}
                   defaultValue={existing?.team2Games ?? ""}
-                  disabled={round.status === "VALIDATED"}
+                  disabled={isLocked || round.status === "VALIDATED"}
                   className="w-14 h-10 text-center border border-slate-200 rounded-lg disabled:bg-slate-50 disabled:text-slate-400"
                 />
               );
@@ -109,7 +112,7 @@ export function RoundMatchCard({
             Riposano: {round.restingNumbers.map(name).join(", ")}
           </p>
 
-          {round.status !== "VALIDATED" && (
+          {isActive && round.status !== "VALIDATED" && (
             <div className="flex items-center gap-3 pt-1">
               <button
                 type="submit"

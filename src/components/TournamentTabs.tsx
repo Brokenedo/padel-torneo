@@ -55,7 +55,12 @@ export function TournamentTabs({
             .slice()
             .sort((a, b) => a.roundNumber - b.roundNumber)
             .map((round) => (
-              <RoundMatchCard key={round.id} round={round} numberToName={numberToName} />
+              <RoundMatchCard
+                key={round.id}
+                round={round}
+                numberToName={numberToName}
+                isActive={round.roundNumber === tournament.currentRoundNumber}
+              />
             ))}
         </div>
       )}

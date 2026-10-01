@@ -2,8 +2,8 @@ import { addDays } from "date-fns";
 import { prisma } from "../../prisma";
 import { DataRepository, CreateTournamentInput, SubmitResultInput } from "../repository";
 import { Player, Tournament, Round, Match, SetScore } from "../../types";
-import { planNextRound } from "../../pairing";
-import { computeWinnerTeam, buildHistoryFromRounds } from "../../matchLogic";
+import { generateFullSchedule } from "../../pairing";
+import { computeWinnerTeam } from "../../matchLogic";
 import type {
   Player as PrismaPlayer,
   Round as PrismaRound,
@@ -127,7 +127,10 @@ export class PrismaRepository implements DataRepository {
     const shuffled = [...input.playerIds].sort(() => Math.random() - 0.5);
     const totalRounds = 11;
     const numbers = shuffled.map((_, idx) => idx + 1);
-    const firstRound = planNextRound(numbers, [], totalRounds);
+    // Calendario completo calcolato subito alla creazione: tutti i turni mostrano
+    // gia' gli accoppiamenti, ma restano "bloccati" (vedi submitMatchResult/validateRound)
+    // finche' non e' il loro turno (currentRoundNumber).
+    const schedule = generateFullSchedule(numbers, totalRounds);
 
     const created = await prisma.tournament.create({
       data: {
@@ -139,23 +142,17 @@ export class PrismaRepository implements DataRepository {
           create: shuffled.map((playerId, idx) => ({ playerId, number: idx + 1 })),
         },
         rounds: {
-          create: Array.from({ length: totalRounds }, (_, i) => {
-            const roundNumber = i + 1;
-            const isFirst = roundNumber === 1;
-            return {
-              roundNumber,
-              weekStartAt: addDays(input.startDate, i * 7),
-              restingNumbers: isFirst ? firstRound.resting : [],
-              match: isFirst
-                ? {
-                    create: {
-                      team1Numbers: firstRound.team1,
-                      team2Numbers: firstRound.team2,
-                    },
-                  }
-                : undefined,
-            };
-          }),
+          create: schedule.map((generated, i) => ({
+            roundNumber: i + 1,
+            weekStartAt: addDays(input.startDate, i * 7),
+            restingNumbers: generated.resting,
+            match: {
+              create: {
+                team1Numbers: generated.team1,
+                team2Numbers: generated.team2,
+              },
+            },
+          })),
         },
       },
       include: tournamentInclude,
@@ -175,11 +172,14 @@ export class PrismaRepository implements DataRepository {
   async submitMatchResult(input: SubmitResultInput): Promise<Round> {
     const round = await prisma.round.findUnique({
       where: { id: input.roundId },
-      include: { match: { include: { sets: true } } },
+      include: { match: { include: { sets: true } }, tournament: true },
     });
     if (!round || !round.match) throw new Error("Turno non trovato");
     if (round.status === "VALIDATED") {
       throw new Error("Il turno e' gia' stato convalidato, non puoi modificare il risultato");
+    }
+    if (round.roundNumber !== round.tournament.currentRoundNumber) {
+      throw new Error("Questo turno non e' ancora attivo: convalida prima i turni precedenti");
     }
 
     const winnerTeam = computeWinnerTeam(
@@ -205,47 +205,33 @@ export class PrismaRepository implements DataRepository {
   async validateRound(roundId: string): Promise<{ round: Round; nextRound: Round | null }> {
     const round = await prisma.round.findUnique({
       where: { id: roundId },
-      include: { match: { include: { sets: true } } },
+      include: { match: { include: { sets: true } }, tournament: true },
     });
     if (!round || !round.match || round.match.winnerTeam === null) {
       throw new Error("Inserisci il risultato completo prima di convalidare il turno");
     }
-
-    const tournament = await this.getTournamentById(round.tournamentId);
-    if (!tournament) throw new Error("Torneo non trovato");
+    if (round.roundNumber !== round.tournament.currentRoundNumber) {
+      throw new Error("Questo turno non e' ancora attivo: convalida prima i turni precedenti");
+    }
 
     await prisma.round.update({ where: { id: roundId }, data: { status: "VALIDATED" } });
 
     const nextRoundNumber = round.roundNumber + 1;
-    const nextRoundExisting = tournament.rounds.find((r) => r.roundNumber === nextRoundNumber);
+    const nextRoundExisting = await prisma.round.findFirst({
+      where: { tournamentId: round.tournamentId, roundNumber: nextRoundNumber },
+    });
 
-    let nextRound: Round | null = null;
     if (nextRoundExisting) {
-      const updatedRounds = tournament.rounds.map((r) =>
-        r.id === roundId ? { ...r, status: "VALIDATED" as const } : r
-      );
-      const history = buildHistoryFromRounds(updatedRounds);
-      const remaining = tournament.totalRounds - round.roundNumber;
-      const players = tournament.players.map((p) => p.number);
-      const generated = planNextRound(players, history, remaining);
-
-      await prisma.round.update({
-        where: { id: nextRoundExisting.id },
-        data: {
-          restingNumbers: generated.resting,
-          match: { create: { team1Numbers: generated.team1, team2Numbers: generated.team2 } },
-        },
-      });
       await prisma.tournament.update({
-        where: { id: tournament.id },
+        where: { id: round.tournamentId },
         data: { currentRoundNumber: nextRoundNumber },
       });
-      nextRound = await this.getRound(nextRoundExisting.id);
     } else {
-      await prisma.tournament.update({ where: { id: tournament.id }, data: { status: "COMPLETED" } });
+      await prisma.tournament.update({ where: { id: round.tournamentId }, data: { status: "COMPLETED" } });
     }
 
     const validatedRound = await this.getRound(roundId);
+    const nextRound = nextRoundExisting ? await this.getRound(nextRoundExisting.id) : null;
     return { round: validatedRound!, nextRound };
   }
 }

@@ -2,8 +2,8 @@ import { addDays } from "date-fns";
 import { DataRepository, CreateTournamentInput, SubmitResultInput } from "../repository";
 import { Player, Tournament, Round } from "../../types";
 import { getMockStore } from "./mockStore";
-import { planNextRound } from "../../pairing";
-import { computeWinnerTeam, buildHistoryFromRounds } from "../../matchLogic";
+import { generateFullSchedule } from "../../pairing";
+import { computeWinnerTeam } from "../../matchLogic";
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
@@ -91,35 +91,33 @@ export class MockRepository implements DataRepository {
     });
 
     const totalRounds = 11;
-    const firstRound = planNextRound(
+    // Calendario completo calcolato subito alla creazione: tutti i turni mostrano
+    // gia' gli accoppiamenti, ma restano "bloccati" (vedi submitMatchResult/validateRound)
+    // finche' non e' il loro turno (currentRoundNumber).
+    const schedule = generateFullSchedule(
       players.map((p) => p.number),
-      [],
       totalRounds
     );
 
-    const rounds: Round[] = [];
-    for (let n = 1; n <= totalRounds; n++) {
-      rounds.push({
-        id: crypto.randomUUID(),
+    const rounds: Round[] = schedule.map((generated, i) => {
+      const roundId = crypto.randomUUID();
+      return {
+        id: roundId,
         tournamentId,
-        roundNumber: n,
-        weekStartAt: addDays(input.startDate, (n - 1) * 7),
+        roundNumber: i + 1,
+        weekStartAt: addDays(input.startDate, i * 7),
         status: "PENDING",
-        restingNumbers: n === 1 ? firstRound.resting : [],
-        match:
-          n === 1
-            ? {
-                id: crypto.randomUUID(),
-                roundId: "", // valorizzato sotto
-                team1Numbers: firstRound.team1,
-                team2Numbers: firstRound.team2,
-                sets: [],
-                winnerTeam: null,
-              }
-            : null,
-      });
-    }
-    rounds[0].match!.roundId = rounds[0].id;
+        restingNumbers: generated.resting,
+        match: {
+          id: crypto.randomUUID(),
+          roundId,
+          team1Numbers: generated.team1,
+          team2Numbers: generated.team2,
+          sets: [],
+          winnerTeam: null,
+        },
+      };
+    });
 
     const tournament: Tournament = {
       id: tournamentId,
@@ -155,6 +153,9 @@ export class MockRepository implements DataRepository {
         if (round.status === "VALIDATED") {
           throw new Error("Il turno e' gia' stato convalidato, non puoi modificare il risultato");
         }
+        if (round.roundNumber !== t.currentRoundNumber) {
+          throw new Error("Questo turno non e' ancora attivo: convalida prima i turni precedenti");
+        }
         round.match.sets = input.sets.map((s, idx) => ({
           setNumber: idx + 1,
           team1Games: s.team1Games,
@@ -172,6 +173,9 @@ export class MockRepository implements DataRepository {
     for (const t of store.tournaments) {
       const round = t.rounds.find((r) => r.id === roundId);
       if (!round) continue;
+      if (round.roundNumber !== t.currentRoundNumber) {
+        throw new Error("Questo turno non e' ancora attivo: convalida prima i turni precedenti");
+      }
       if (!round.match || round.match.winnerTeam === null) {
         throw new Error("Inserisci il risultato completo prima di convalidare il turno");
       }
@@ -181,20 +185,6 @@ export class MockRepository implements DataRepository {
       const nextRound = t.rounds.find((r) => r.roundNumber === nextRoundNumber);
 
       if (nextRound) {
-        const history = buildHistoryFromRounds(t.rounds);
-        const remaining = t.totalRounds - round.roundNumber;
-        const players = t.players.map((p) => p.number);
-        const generated = planNextRound(players, history, remaining);
-
-        nextRound.restingNumbers = generated.resting;
-        nextRound.match = {
-          id: crypto.randomUUID(),
-          roundId: nextRound.id,
-          team1Numbers: generated.team1,
-          team2Numbers: generated.team2,
-          sets: [],
-          winnerTeam: null,
-        };
         t.currentRoundNumber = nextRoundNumber;
       } else {
         t.status = "COMPLETED";

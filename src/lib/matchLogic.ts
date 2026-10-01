@@ -1,6 +1,4 @@
 import { SetScore, ScoringMode } from "./types";
-import { RoundHistoryEntry } from "./pairing";
-import { Round } from "./types";
 
 /** Determina chi ha vinto il match (meglio dei 3 set), oppure null se non ancora concluso. */
 export function computeWinnerTeam(sets: SetScore[]): 1 | 2 | null {
@@ -54,16 +52,4 @@ export function computeMatchPoints(
         : { team1Points: losePoints, team2Points: winPoints };
     }
   }
-}
-
-/** Costruisce lo storico (solo turni convalidati) da passare all'algoritmo di pairing. */
-export function buildHistoryFromRounds(rounds: Round[]): RoundHistoryEntry[] {
-  return rounds
-    .filter((r) => r.status === "VALIDATED" && r.match)
-    .sort((a, b) => a.roundNumber - b.roundNumber)
-    .map((r) => ({
-      team1: r.match!.team1Numbers,
-      team2: r.match!.team2Numbers,
-      resting: r.restingNumbers as [number, number, number],
-    }));
 }
