@@ -123,6 +123,7 @@ export class MockRepository implements DataRepository {
       name: input.name,
       startDate: input.startDate,
       status: "ACTIVE",
+      scoringMode: input.scoringMode,
       currentRoundNumber: 1,
       totalRounds,
       createdAt: new Date(),

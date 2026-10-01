@@ -2,10 +2,29 @@
 
 import { useState } from "react";
 import { createTournamentAction } from "@/app/actions";
-import { Player } from "@/lib/types";
+import { Player, ScoringMode } from "@/lib/types";
+
+const SCORING_OPTIONS: Array<{ value: ScoringMode; label: string; description: string }> = [
+  {
+    value: "VOLLEYBALL",
+    label: "A) 2-0 / 2-1 (stile pallavolo)",
+    description: "Vittoria 2-0: vincitori 3, perdenti 0 · Vittoria 2-1: vincitori 2, perdenti 1",
+  },
+  {
+    value: "WIN_ONLY",
+    label: "B) 1 punto a vittoria",
+    description: "Chi vince prende 1, chi perde 0, qualunque sia il risultato",
+  },
+  {
+    value: "SETS_WON",
+    label: "C) Punti = set vinti",
+    description: "Vittoria 2-0: vincitori 2, perdenti 0 · Vittoria 2-1: vincitori 2, perdenti 1",
+  },
+];
 
 export function NewTournamentForm({ players }: { players: Player[] }) {
   const [selected, setSelected] = useState<string[]>([]);
+  const [scoringMode, setScoringMode] = useState<ScoringMode>("VOLLEYBALL");
 
   function toggle(id: string) {
     setSelected((prev) =>
@@ -39,6 +58,36 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
           required
           className="border border-slate-300 rounded px-3 py-2 text-sm"
         />
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Modalita&apos; di assegnazione punti (classifica individuale)</p>
+        <div className="space-y-2">
+          {SCORING_OPTIONS.map((opt) => {
+            const checked = scoringMode === opt.value;
+            return (
+              <label
+                key={opt.value}
+                className={`block border rounded px-3 py-2 text-sm cursor-pointer ${
+                  checked ? "border-slate-900 bg-slate-100" : "border-slate-200"
+                }`}
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <input
+                    type="radio"
+                    name="scoringMode"
+                    value={opt.value}
+                    checked={checked}
+                    onChange={() => setScoringMode(opt.value)}
+                    className="accent-slate-900"
+                  />
+                  {opt.label}
+                </span>
+                <span className="block text-xs text-slate-500 mt-1 ml-6">{opt.description}</span>
+              </label>
+            );
+          })}
+        </div>
       </div>
 
       <div className="space-y-2">

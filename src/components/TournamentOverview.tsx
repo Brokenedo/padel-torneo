@@ -1,8 +1,16 @@
 import { Tournament } from "@/lib/types";
 import { computeStats } from "@/lib/stats";
+import { computeStandings } from "@/lib/standings";
 import { StatsMatrices } from "@/components/StatsMatrices";
+import { StandingsTable } from "@/components/StandingsTable";
 import { RoundCard } from "@/components/RoundCard";
 import Link from "next/link";
+
+const SCORING_LABELS: Record<Tournament["scoringMode"], string> = {
+  VOLLEYBALL: "2-0 / 2-1 (stile pallavolo)",
+  WIN_ONLY: "1 punto a vittoria",
+  SETS_WON: "Punti = set vinti",
+};
 
 export function TournamentOverview({ tournament }: { tournament: Tournament }) {
   const numberToName = new Map(tournament.players.map((p) => [p.number, p.player.name]));
@@ -11,6 +19,7 @@ export function TournamentOverview({ tournament }: { tournament: Tournament }) {
     tournament.players.map((p) => p.number),
     tournament.rounds
   );
+  const standings = computeStandings(tournament);
 
   return (
     <div className="space-y-8">
@@ -19,7 +28,8 @@ export function TournamentOverview({ tournament }: { tournament: Tournament }) {
         <p className="text-sm text-slate-500">
           Inizio {tournament.startDate.toLocaleDateString("it-IT")} &middot; Turno{" "}
           {tournament.currentRoundNumber} di {tournament.totalRounds} &middot;{" "}
-          {tournament.status === "ACTIVE" ? "In corso" : "Concluso"}
+          {tournament.status === "ACTIVE" ? "In corso" : "Concluso"} &middot; Punteggio:{" "}
+          {SCORING_LABELS[tournament.scoringMode]}
         </p>
       </div>
 
@@ -47,6 +57,11 @@ export function TournamentOverview({ tournament }: { tournament: Tournament }) {
           <RoundCard round={currentRound} numberToName={numberToName} />
         </section>
       )}
+
+      <section>
+        <h2 className="text-lg font-semibold mb-3">Classifica</h2>
+        <StandingsTable standings={standings} />
+      </section>
 
       <section>
         <h2 className="text-lg font-semibold mb-3">Calendario</h2>

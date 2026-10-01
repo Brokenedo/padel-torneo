@@ -66,6 +66,7 @@ function mapTournament(t: TournamentWithRelations): Tournament {
     name: t.name,
     startDate: t.startDate,
     status: t.status,
+    scoringMode: t.scoringMode,
     currentRoundNumber: t.currentRoundNumber,
     totalRounds: t.totalRounds,
     createdAt: t.createdAt,
@@ -132,6 +133,7 @@ export class PrismaRepository implements DataRepository {
       data: {
         name: input.name,
         startDate: input.startDate,
+        scoringMode: input.scoringMode,
         totalRounds,
         players: {
           create: shuffled.map((playerId, idx) => ({ playerId, number: idx + 1 })),

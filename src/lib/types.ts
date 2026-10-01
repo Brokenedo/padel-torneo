@@ -3,6 +3,9 @@
 
 export type TournamentStatus = "ACTIVE" | "COMPLETED";
 export type RoundStatus = "PENDING" | "VALIDATED";
+// Modalita' di assegnazione punti individuali, scelta alla creazione del torneo:
+// VOLLEYBALL: 2-0 => 3/0, 2-1 => 2/1 | WIN_ONLY: vittoria 1, sconfitta 0 | SETS_WON: punti = set vinti
+export type ScoringMode = "VOLLEYBALL" | "WIN_ONLY" | "SETS_WON";
 
 export interface Player {
   id: string;
@@ -49,6 +52,7 @@ export interface Tournament {
   name: string;
   startDate: Date;
   status: TournamentStatus;
+  scoringMode: ScoringMode;
   currentRoundNumber: number;
   totalRounds: number;
   createdAt: Date;

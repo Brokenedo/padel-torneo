@@ -1,9 +1,10 @@
-import { Player, Tournament, Round, AuthUser } from "../types";
+import { Player, Tournament, Round, AuthUser, ScoringMode } from "../types";
 
 export interface CreateTournamentInput {
   name: string;
   startDate: Date;
   playerIds: string[]; // esattamente 7 Player id
+  scoringMode: ScoringMode;
 }
 
 export interface SubmitResultInput {

@@ -47,6 +47,9 @@ const createTournamentSchema = z.object({
   name: z.string().trim().min(2, "Il nome del torneo e' obbligatorio"),
   startDate: z.string().min(1, "La data di inizio e' obbligatoria"),
   playerIds: z.array(z.string()).length(7, "Devi selezionare esattamente 7 giocatori"),
+  scoringMode: z.enum(["VOLLEYBALL", "WIN_ONLY", "SETS_WON"], {
+    message: "Seleziona una modalita' di punteggio",
+  }),
 });
 
 export async function createTournamentAction(formData: FormData) {
@@ -55,12 +58,14 @@ export async function createTournamentAction(formData: FormData) {
     name: formData.get("name"),
     startDate: formData.get("startDate"),
     playerIds,
+    scoringMode: formData.get("scoringMode"),
   });
 
   const tournament = await getRepository().createTournament({
     name: parsed.name,
     startDate: new Date(parsed.startDate),
     playerIds: parsed.playerIds,
+    scoringMode: parsed.scoringMode,
   });
 
   revalidatePath("/");

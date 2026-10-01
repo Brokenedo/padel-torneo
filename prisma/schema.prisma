@@ -22,6 +22,16 @@ enum RoundStatus {
   VALIDATED
 }
 
+// Modalita' di assegnazione punti individuali (classifica), scelta alla creazione del torneo.
+// VOLLEYBALL: 2-0 => 3/0, 2-1 => 2/1 (stile pallavolo)
+// WIN_ONLY: vittoria = 1 punto, sconfitta = 0, qualunque sia il risultato
+// SETS_WON: punti = numero di set vinti da ciascuna squadra
+enum ScoringMode {
+  VOLLEYBALL
+  WIN_ONLY
+  SETS_WON
+}
+
 model AdminUser {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -44,6 +54,7 @@ model Tournament {
   name               String
   startDate          DateTime
   status             TournamentStatus @default(ACTIVE)
+  scoringMode        ScoringMode      @default(VOLLEYBALL)
   currentRoundNumber Int              @default(1)
   totalRounds        Int              @default(11)
   createdAt          DateTime         @default(now())

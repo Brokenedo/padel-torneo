@@ -79,6 +79,7 @@ function seed(): MockStore {
       name: "Torneo di prova",
       startDate: new Date(),
       status: "ACTIVE",
+      scoringMode: "VOLLEYBALL",
       currentRoundNumber: 1,
       totalRounds: 11,
       createdAt: new Date(),
