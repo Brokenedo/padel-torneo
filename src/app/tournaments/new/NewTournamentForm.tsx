@@ -33,7 +33,7 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
   }
 
   return (
-    <form action={createTournamentAction} className="space-y-6">
+    <form action={createTournamentAction} className="space-y-6 bg-white rounded-2xl shadow-sm p-6">
       <div className="space-y-1">
         <label htmlFor="name" className="text-sm font-medium block">
           Nome torneo
@@ -42,7 +42,7 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
           id="name"
           name="name"
           required
-          className="w-full max-w-sm border border-slate-300 rounded px-3 py-2 text-sm"
+          className="w-full max-w-sm border border-slate-200 rounded-lg px-3 py-2 text-sm"
           placeholder="Torneo padel autunno 2026"
         />
       </div>
@@ -56,7 +56,7 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
           name="startDate"
           type="date"
           required
-          className="border border-slate-300 rounded px-3 py-2 text-sm"
+          className="border border-slate-200 rounded-lg px-3 py-2 text-sm"
         />
       </div>
 
@@ -68,8 +68,8 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
             return (
               <label
                 key={opt.value}
-                className={`block border rounded px-3 py-2 text-sm cursor-pointer ${
-                  checked ? "border-slate-900 bg-slate-100" : "border-slate-200"
+                className={`block border rounded-xl px-4 py-3 text-sm cursor-pointer transition-colors ${
+                  checked ? "border-primary bg-primary/5" : "border-slate-200"
                 }`}
               >
                 <span className="flex items-center gap-2 font-medium">
@@ -79,7 +79,7 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
                     value={opt.value}
                     checked={checked}
                     onChange={() => setScoringMode(opt.value)}
-                    className="accent-slate-900"
+                    className="accent-primary"
                   />
                   {opt.label}
                 </span>
@@ -100,8 +100,8 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
             return (
               <label
                 key={p.id}
-                className={`border rounded px-3 py-2 text-sm flex items-center gap-2 cursor-pointer ${
-                  checked ? "border-slate-900 bg-slate-100" : "border-slate-200"
+                className={`border rounded-xl px-3 py-2 text-sm flex items-center gap-2 cursor-pointer transition-colors ${
+                  checked ? "border-primary bg-primary/5" : "border-slate-200"
                 }`}
               >
                 <input
@@ -110,7 +110,7 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
                   value={p.id}
                   checked={checked}
                   onChange={() => toggle(p.id)}
-                  className="accent-slate-900"
+                  className="accent-primary"
                 />
                 {p.name}
               </label>
@@ -122,7 +122,7 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
       <button
         type="submit"
         disabled={selected.length !== 7}
-        className="bg-slate-900 text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-50 cursor-pointer"
+        className="bg-primary hover:bg-primary-dark text-white rounded-lg px-5 py-2.5 text-sm font-semibold disabled:opacity-50 cursor-pointer transition-colors"
       >
         Crea torneo e assegna i numeri a sorteggio
       </button>

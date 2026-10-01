@@ -5,20 +5,20 @@ export async function Header() {
   const session = await auth();
 
   return (
-    <header className="border-b border-slate-200 bg-white">
+    <header className="bg-white border-b border-black/5">
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="font-semibold text-lg">
+        <Link href="/" className="font-extrabold text-lg text-primary">
           🎾 Torneo Padel
         </Link>
         {session?.user && (
           <nav className="flex items-center gap-4 text-sm">
-            <Link href="/" className="hover:underline">
+            <Link href="/" className="font-medium text-slate-600 hover:text-primary">
               Tornei
             </Link>
-            <Link href="/players" className="hover:underline">
+            <Link href="/players" className="font-medium text-slate-600 hover:text-primary">
               Giocatori
             </Link>
-            <span className="text-slate-500">{session.user.email}</span>
+            <span className="text-slate-400">{session.user.email}</span>
             <form
               action={async () => {
                 "use server";

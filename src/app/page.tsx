@@ -15,11 +15,11 @@ export default async function TournamentsListPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Tornei</h1>
+        <h1 className="text-3xl font-extrabold text-slate-900">Tornei</h1>
         {isAdmin && (
           <Link
             href="/tournaments/new"
-            className="inline-block bg-slate-900 text-white rounded px-4 py-2 text-sm font-medium"
+            className="inline-block bg-primary hover:bg-primary-dark text-white rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition-colors"
           >
             + Nuovo torneo
           </Link>
@@ -27,29 +27,29 @@ export default async function TournamentsListPage() {
       </div>
 
       {tournaments.length === 0 ? (
-        <div className="text-center py-16 space-y-4">
+        <div className="text-center py-16 space-y-4 bg-white rounded-2xl shadow-sm">
           <h2 className="text-lg font-semibold">Nessun torneo ancora creato</h2>
           <p className="text-slate-500">Crea un nuovo torneo selezionando 7 giocatori.</p>
           {isAdmin && (
             <Link
               href="/tournaments/new"
-              className="inline-block bg-slate-900 text-white rounded px-4 py-2 text-sm font-medium"
+              className="inline-block bg-primary hover:bg-primary-dark text-white rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors"
             >
               Crea torneo
             </Link>
           )}
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded divide-y divide-slate-100">
+        <div className="bg-white rounded-2xl shadow-sm divide-y divide-slate-100 overflow-hidden">
           {tournaments.map((t) => (
             <Link
               key={t.id}
               href={`/tournaments/${t.id}`}
-              className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
+              className="flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition-colors"
             >
               <div>
-                <p className="font-medium">{t.name}</p>
-                <p className="text-xs text-slate-500">
+                <p className="font-semibold text-slate-900">{t.name}</p>
+                <p className="text-xs text-slate-500 mt-0.5">
                   Inizio {t.startDate.toLocaleDateString("it-IT")} &middot; Turno{" "}
                   {t.currentRoundNumber} di {t.totalRounds}
                 </p>
@@ -57,8 +57,8 @@ export default async function TournamentsListPage() {
               <span
                 className={
                   t.status === "ACTIVE"
-                    ? "text-amber-600 text-xs font-medium"
-                    : "text-green-600 text-xs font-medium"
+                    ? "text-xs font-semibold px-3 py-1 rounded-full bg-amber-100 text-amber-700"
+                    : "text-xs font-semibold px-3 py-1 rounded-full bg-primary/10 text-primary"
                 }
               >
                 {STATUS_LABEL[t.status]}

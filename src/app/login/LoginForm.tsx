@@ -12,9 +12,9 @@ export function LoginForm() {
   return (
     <form
       action={formAction}
-      className="w-full max-w-sm bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4"
+      className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-sm space-y-4"
     >
-      <h1 className="text-xl font-semibold">Accedi</h1>
+      <h1 className="text-2xl font-extrabold text-slate-900">Accedi</h1>
       <p className="text-sm text-slate-500">Gestionale torneo di padel</p>
 
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
@@ -28,7 +28,7 @@ export function LoginForm() {
           name="email"
           type="email"
           required
-          className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
           placeholder="admin@padel.local"
         />
       </div>
@@ -42,7 +42,7 @@ export function LoginForm() {
           name="password"
           type="password"
           required
-          className="w-full border border-slate-300 rounded px-3 py-2 text-sm"
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"
         />
       </div>
 
@@ -51,7 +51,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full bg-slate-900 text-white rounded py-2 text-sm font-medium disabled:opacity-50 cursor-pointer"
+        className="w-full bg-primary hover:bg-primary-dark text-white rounded-lg py-2.5 text-sm font-semibold disabled:opacity-50 cursor-pointer transition-colors"
       >
         {pending ? "Accesso in corso..." : "Accedi"}
       </button>

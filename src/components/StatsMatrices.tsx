@@ -13,14 +13,14 @@ function Matrix({
 }) {
   const sorted = [...players].sort((a, b) => a - b);
   return (
-    <div className="bg-white border border-slate-200 rounded p-4 overflow-x-auto">
-      <h3 className="font-semibold mb-2 text-sm">{title}</h3>
+    <div className="bg-white rounded-2xl shadow-sm p-5 overflow-x-auto">
+      <h3 className="font-bold mb-3 text-sm text-slate-900">{title}</h3>
       <table className="text-xs border-collapse">
         <thead>
           <tr>
             <th className="p-1"></th>
             {sorted.map((p) => (
-              <th key={p} className="p-1 text-slate-500 font-medium" title={numberToName.get(p)}>
+              <th key={p} className="p-1 text-slate-400 font-medium" title={numberToName.get(p)}>
                 {p}
               </th>
             ))}
@@ -29,7 +29,7 @@ function Matrix({
         <tbody>
           {sorted.map((row) => (
             <tr key={row}>
-              <td className="p-1 text-slate-500 font-medium" title={numberToName.get(row)}>
+              <td className="p-1 text-slate-400 font-medium" title={numberToName.get(row)}>
                 {row}
               </td>
               {sorted.map((col) => (

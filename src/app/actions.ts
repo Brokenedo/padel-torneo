@@ -100,15 +100,13 @@ export async function submitResultAction(formData: FormData) {
     .filter((s) => s.team1Games !== null && s.team1Games !== "" && s.team2Games !== null && s.team2Games !== "");
 
   const parsed = submitResultSchema.parse({ roundId, sets });
-  await getRepository().submitMatchResult(parsed);
-  revalidatePath(`/round/${roundId}`);
-  revalidatePath("/");
+  const round = await getRepository().submitMatchResult(parsed);
+  revalidatePath(`/tournaments/${round.tournamentId}`);
 }
 
 export async function validateRoundAction(formData: FormData) {
   const roundId = String(formData.get("roundId"));
-  await getRepository().validateRound(roundId);
-  revalidatePath(`/round/${roundId}`);
-  revalidatePath("/");
-  redirect("/");
+  const { round } = await getRepository().validateRound(roundId);
+  revalidatePath(`/tournaments/${round.tournamentId}`);
+  redirect(`/tournaments/${round.tournamentId}`);
 }
