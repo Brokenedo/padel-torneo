@@ -1,5 +1,9 @@
 # 🎾 Torneo Padel
 
+> 📐 Per l'architettura tecnica completa dell'app (stack, livelli, repository pattern,
+> autenticazione/autorizzazione, logica di dominio) e il diagramma ER del database,
+> vedi [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 Gestionale per un torneo di padel a 7 giocatori a rotazione: ogni settimana (turno) viene
 giocata una partita (2 contro 2, al meglio di 3 set) mentre 3 giocatori riposano. Dopo la
 convalida del risultato, il sistema genera automaticamente l'abbinamento del turno
