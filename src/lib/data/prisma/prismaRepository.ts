@@ -70,6 +70,7 @@ function mapTournament(t: TournamentWithRelations): Tournament {
     currentRoundNumber: t.currentRoundNumber,
     totalRounds: t.totalRounds,
     createdAt: t.createdAt,
+    createdById: t.createdById,
     players: t.players.map((tp) => ({
       id: tp.id,
       tournamentId: tp.tournamentId,
@@ -138,6 +139,7 @@ export class PrismaRepository implements DataRepository {
         startDate: input.startDate,
         scoringMode: input.scoringMode,
         totalRounds,
+        createdById: input.createdById,
         players: {
           create: shuffled.map((playerId, idx) => ({ playerId, number: idx + 1 })),
         },
@@ -159,6 +161,18 @@ export class PrismaRepository implements DataRepository {
     });
 
     return mapTournament(created as TournamentWithRelations);
+  }
+
+  async deleteTournament(id: string, requestedByUserId: string): Promise<void> {
+    const tournament = await prisma.tournament.findUnique({
+      where: { id },
+      select: { createdById: true },
+    });
+    if (!tournament) throw new Error("Torneo non trovato");
+    if (tournament.createdById !== requestedByUserId) {
+      throw new Error("Solo chi ha creato il torneo puo' eliminarlo");
+    }
+    await prisma.tournament.delete({ where: { id } });
   }
 
   async getRound(roundId: string): Promise<Round | null> {

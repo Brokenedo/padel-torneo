@@ -71,10 +71,22 @@ export async function createTournamentAction(formData: FormData) {
     startDate: new Date(parsed.startDate),
     playerIds: parsed.playerIds,
     scoringMode: parsed.scoringMode,
+    createdById: session.user.id,
   });
 
   revalidatePath("/");
   redirect(`/tournaments/${tournament.id}`);
+}
+
+export async function deleteTournamentAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error("Devi essere autenticato");
+  }
+
+  const tournamentId = String(formData.get("tournamentId"));
+  await getRepository().deleteTournament(tournamentId, session.user.id);
+  revalidatePath("/");
 }
 
 const submitResultSchema = z.object({

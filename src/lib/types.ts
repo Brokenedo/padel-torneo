@@ -56,6 +56,7 @@ export interface Tournament {
   currentRoundNumber: number;
   totalRounds: number;
   createdAt: Date;
+  createdById: string | null; // admin che ha creato il torneo: solo lui puo' eliminarlo
   players: TournamentPlayer[];
   rounds: Round[];
 }

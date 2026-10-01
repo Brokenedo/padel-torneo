@@ -128,12 +128,23 @@ export class MockRepository implements DataRepository {
       currentRoundNumber: 1,
       totalRounds,
       createdAt: new Date(),
+      createdById: input.createdById,
       players,
       rounds,
     };
 
     store.tournaments.push(tournament);
     return reviveTournamentDates(clone(tournament));
+  }
+
+  async deleteTournament(id: string, requestedByUserId: string): Promise<void> {
+    const store = getMockStore();
+    const index = store.tournaments.findIndex((t) => t.id === id);
+    if (index === -1) throw new Error("Torneo non trovato");
+    if (store.tournaments[index].createdById !== requestedByUserId) {
+      throw new Error("Solo chi ha creato il torneo puo' eliminarlo");
+    }
+    store.tournaments.splice(index, 1);
   }
 
   async getRound(roundId: string): Promise<Round | null> {

@@ -5,6 +5,7 @@ export interface CreateTournamentInput {
   startDate: Date;
   playerIds: string[]; // esattamente 7 Player id
   scoringMode: ScoringMode;
+  createdById: string;
 }
 
 export interface SubmitResultInput {
@@ -28,6 +29,8 @@ export interface DataRepository {
   getActiveTournament(): Promise<Tournament | null>;
   getTournamentById(id: string): Promise<Tournament | null>;
   createTournament(input: CreateTournamentInput): Promise<Tournament>;
+  /** Elimina il torneo: lancia un errore se requestedByUserId non e' l'admin che l'ha creato. */
+  deleteTournament(id: string, requestedByUserId: string): Promise<void>;
 
   getRound(roundId: string): Promise<Round | null>;
   submitMatchResult(input: SubmitResultInput): Promise<Round>;

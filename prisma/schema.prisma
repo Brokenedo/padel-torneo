@@ -38,6 +38,8 @@ model AdminUser {
   name         String
   passwordHash String
   createdAt    DateTime @default(now())
+
+  tournaments Tournament[]
 }
 
 model Player {
@@ -58,6 +60,9 @@ model Tournament {
   currentRoundNumber Int              @default(1)
   totalRounds        Int              @default(11)
   createdAt          DateTime         @default(now())
+  // admin che ha creato il torneo: solo lui puo' eliminarlo
+  createdById        String?
+  createdBy          AdminUser?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   players TournamentPlayer[]
   rounds  Round[]

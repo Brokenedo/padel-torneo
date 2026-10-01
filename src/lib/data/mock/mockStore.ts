@@ -83,6 +83,7 @@ function seed(): MockStore {
       currentRoundNumber: 1,
       totalRounds: 11,
       createdAt: new Date(),
+      createdById: "seed-admin-1",
       players: tournamentPlayers,
       rounds,
     },
