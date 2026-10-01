@@ -1,6 +1,7 @@
+import bcrypt from "bcryptjs";
 import { addDays } from "date-fns";
-import { DataRepository, CreateTournamentInput, SubmitResultInput } from "../repository";
-import { Player, Tournament, Round } from "../../types";
+import { DataRepository, CreateTournamentInput, CreateUserInput, SubmitResultInput } from "../repository";
+import { Player, Tournament, Round, AppUser } from "../../types";
 import { getMockStore } from "./mockStore";
 import { generateFullSchedule } from "../../pairing";
 import { computeWinnerTeam } from "../../matchLogic";
@@ -30,6 +31,60 @@ export class MockRepository implements DataRepository {
   async findUserByEmail(email: string) {
     const store = getMockStore();
     return store.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null;
+  }
+
+  async listUsers(): Promise<AppUser[]> {
+    const store = getMockStore();
+    return store.users
+      .slice()
+      .sort((a, b) => a.email.localeCompare(b.email))
+      .map((u) => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        name: u.name,
+        isAdmin: u.isAdmin,
+        createdAt: u.createdAt,
+      }));
+  }
+
+  async createUser(input: CreateUserInput): Promise<AppUser> {
+    const store = getMockStore();
+    const email = input.email.toLowerCase().trim();
+    if (store.users.some((u) => u.email.toLowerCase() === email)) {
+      throw new Error("Esiste gia' un utente con questa email");
+    }
+    if (store.users.some((u) => u.username?.toLowerCase() === input.username.toLowerCase())) {
+      throw new Error("Esiste gia' un utente con questo username");
+    }
+
+    const user = {
+      id: crypto.randomUUID(),
+      username: input.username,
+      email,
+      name: input.username,
+      passwordHash: bcrypt.hashSync(input.password, 10),
+      isAdmin: input.isAdmin,
+      createdAt: new Date(),
+    };
+    store.users.push(user);
+
+    // Giocatore omonimo creato automaticamente insieme al nuovo utente.
+    store.players.push({
+      id: crypto.randomUUID(),
+      name: input.username,
+      email,
+      createdAt: new Date(),
+    });
+
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+      isAdmin: user.isAdmin,
+      createdAt: user.createdAt,
+    };
   }
 
   async listPlayers(): Promise<Player[]> {

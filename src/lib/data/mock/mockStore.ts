@@ -28,10 +28,13 @@ function seed(): MockStore {
   const users: AuthUser[] = [
     {
       id: "seed-admin-1",
+      username: "admin",
       email: "admin@padel.local",
       name: "Admin",
       // password mock: "padel123" (solo per sviluppo locale)
       passwordHash: bcrypt.hashSync("padel123", 10),
+      isAdmin: true,
+      createdAt: new Date(),
     },
   ];
 

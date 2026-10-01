@@ -34,9 +34,12 @@ enum ScoringMode {
 
 model AdminUser {
   id           String   @id @default(cuid())
+  username     String?  @unique
   email        String   @unique
   name         String
   passwordHash String
+  // solo gli utenti con isAdmin=true vedono/accedono alla sezione di gestione utenti
+  isAdmin      Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   tournaments Tournament[]

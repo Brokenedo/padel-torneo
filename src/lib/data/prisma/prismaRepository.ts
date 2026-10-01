@@ -1,7 +1,8 @@
 import { addDays } from "date-fns";
+import bcrypt from "bcryptjs";
 import { prisma } from "../../prisma";
-import { DataRepository, CreateTournamentInput, SubmitResultInput } from "../repository";
-import { Player, Tournament, Round, Match, SetScore } from "../../types";
+import { DataRepository, CreateTournamentInput, CreateUserInput, SubmitResultInput } from "../repository";
+import { Player, Tournament, Round, Match, SetScore, AppUser } from "../../types";
 import { generateFullSchedule } from "../../pairing";
 import { computeWinnerTeam } from "../../matchLogic";
 import type {
@@ -86,7 +87,54 @@ export class PrismaRepository implements DataRepository {
   async findUserByEmail(email: string) {
     const user = await prisma.adminUser.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) return null;
-    return { id: user.id, email: user.email, name: user.name, passwordHash: user.passwordHash };
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+      passwordHash: user.passwordHash,
+      isAdmin: user.isAdmin,
+      createdAt: user.createdAt,
+    };
+  }
+
+  async listUsers(): Promise<AppUser[]> {
+    const users = await prisma.adminUser.findMany({ orderBy: { email: "asc" } });
+    return users.map((u) => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      name: u.name,
+      isAdmin: u.isAdmin,
+      createdAt: u.createdAt,
+    }));
+  }
+
+  async createUser(input: CreateUserInput): Promise<AppUser> {
+    const email = input.email.toLowerCase().trim();
+    const existingEmail = await prisma.adminUser.findUnique({ where: { email } });
+    if (existingEmail) throw new Error("Esiste gia' un utente con questa email");
+    const existingUsername = await prisma.adminUser.findUnique({ where: { username: input.username } });
+    if (existingUsername) throw new Error("Esiste gia' un utente con questo username");
+
+    const passwordHash = await bcrypt.hash(input.password, 10);
+
+    const [user] = await prisma.$transaction([
+      prisma.adminUser.create({
+        data: { username: input.username, email, name: input.username, passwordHash, isAdmin: input.isAdmin },
+      }),
+      // Giocatore omonimo creato automaticamente insieme al nuovo utente.
+      prisma.player.create({ data: { name: input.username, email } }),
+    ]);
+
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+      isAdmin: user.isAdmin,
+      createdAt: user.createdAt,
+    };
   }
 
   async listPlayers(): Promise<Player[]> {

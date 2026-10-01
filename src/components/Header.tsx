@@ -18,6 +18,11 @@ export async function Header() {
             <Link href="/players" className="font-medium text-slate-600 hover:text-primary">
               Giocatori
             </Link>
+            {session.user.role === "ADMIN" && (
+              <Link href="/users" className="font-medium text-slate-600 hover:text-primary">
+                Utenti
+              </Link>
+            )}
             <span className="text-slate-400">{session.user.email}</span>
             <form
               action={async () => {

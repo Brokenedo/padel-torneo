@@ -10,7 +10,7 @@ async function main() {
   await prisma.adminUser.upsert({
     where: { email: "admin@padel.local" },
     update: {},
-    create: { email: "admin@padel.local", name: "Admin", passwordHash },
+    create: { email: "admin@padel.local", username: "admin", name: "Admin", passwordHash, isAdmin: true },
   });
 
   const names = ["Alice", "Bruno", "Carla", "Davide", "Elena", "Fabio", "Giulia"];

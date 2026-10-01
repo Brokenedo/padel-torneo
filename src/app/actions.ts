@@ -43,6 +43,43 @@ export async function createPlayerAction(formData: FormData) {
   revalidatePath("/players");
 }
 
+const createUserSchema = z.object({
+  username: z.string().trim().min(2, "Lo username deve avere almeno 2 caratteri"),
+  email: z.string().trim().email("Email non valida"),
+  password: z.string().min(6, "La password deve avere almeno 6 caratteri"),
+  isAdmin: z.boolean(),
+});
+
+export async function createUserAction(
+  _prevState: { error: string | null },
+  formData: FormData
+): Promise<{ error: string | null }> {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") {
+    return { error: "Solo un amministratore puo' creare nuovi utenti" };
+  }
+
+  const parsed = createUserSchema.safeParse({
+    username: formData.get("username"),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    isAdmin: formData.get("isAdmin") === "on",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dati non validi" };
+  }
+
+  try {
+    await getRepository().createUser(parsed.data);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Errore durante la creazione dell'utente" };
+  }
+
+  revalidatePath("/users");
+  revalidatePath("/players");
+  return { error: null };
+}
+
 const createTournamentSchema = z.object({
   name: z.string().trim().min(2, "Il nome del torneo e' obbligatorio"),
   startDate: z.string().min(1, "La data di inizio e' obbligatoria"),

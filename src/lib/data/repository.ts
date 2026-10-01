@@ -1,4 +1,4 @@
-import { Player, Tournament, Round, AuthUser, ScoringMode } from "../types";
+import { Player, Tournament, Round, AuthUser, AppUser, ScoringMode } from "../types";
 
 export interface CreateTournamentInput {
   name: string;
@@ -6,6 +6,13 @@ export interface CreateTournamentInput {
   playerIds: string[]; // esattamente 7 Player id
   scoringMode: ScoringMode;
   createdById: string;
+}
+
+export interface CreateUserInput {
+  username: string;
+  email: string;
+  password: string;
+  isAdmin: boolean;
 }
 
 export interface SubmitResultInput {
@@ -21,6 +28,9 @@ export interface SubmitResultInput {
  */
 export interface DataRepository {
   findUserByEmail(email: string): Promise<AuthUser | null>;
+  listUsers(): Promise<AppUser[]>;
+  /** Crea un nuovo utente e, in automatico, un giocatore omonimo. */
+  createUser(input: CreateUserInput): Promise<AppUser>;
 
   listPlayers(): Promise<Player[]>;
   createPlayer(input: { name: string; email?: string | null }): Promise<Player>;

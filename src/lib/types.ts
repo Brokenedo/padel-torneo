@@ -63,9 +63,22 @@ export interface Tournament {
 
 export interface AuthUser {
   id: string;
+  username: string | null;
   email: string;
   name: string;
   passwordHash: string;
+  isAdmin: boolean;
+  createdAt: Date;
+}
+
+// Utente applicativo senza passwordHash, per liste/visualizzazioni (sezione gestione utenti).
+export interface AppUser {
+  id: string;
+  username: string | null;
+  email: string;
+  name: string;
+  isAdmin: boolean;
+  createdAt: Date;
 }
 
 // Statistiche calcolate dinamicamente dallo storico dei round (mai salvate su DB).
