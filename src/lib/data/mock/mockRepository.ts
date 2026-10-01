@@ -1,0 +1,206 @@
+import { addDays } from "date-fns";
+import { DataRepository, CreateTournamentInput, SubmitResultInput } from "../repository";
+import { Player, Tournament, Round } from "../../types";
+import { getMockStore } from "./mockStore";
+import { planNextRound } from "../../pairing";
+import { computeWinnerTeam, buildHistoryFromRounds } from "../../matchLogic";
+
+function clone<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function reviveTournamentDates(tournament: Tournament): Tournament {
+  tournament.startDate = new Date(tournament.startDate);
+  tournament.createdAt = new Date(tournament.createdAt);
+  for (const r of tournament.rounds) reviveRoundDates(r);
+  return tournament;
+}
+
+function reviveRoundDates(round: Round): Round {
+  round.weekStartAt = new Date(round.weekStartAt);
+  return round;
+}
+
+function revivePlayerDates(player: Player): Player {
+  player.createdAt = new Date(player.createdAt);
+  return player;
+}
+
+export class MockRepository implements DataRepository {
+  async findUserByEmail(email: string) {
+    const store = getMockStore();
+    return store.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null;
+  }
+
+  async listPlayers(): Promise<Player[]> {
+    const store = getMockStore();
+    return clone(store.players).map(revivePlayerDates);
+  }
+
+  async createPlayer(input: { name: string; email?: string | null }): Promise<Player> {
+    const store = getMockStore();
+    const player: Player = {
+      id: crypto.randomUUID(),
+      name: input.name,
+      email: input.email ?? null,
+      createdAt: new Date(),
+    };
+    store.players.push(player);
+    return revivePlayerDates(clone(player));
+  }
+
+  async listTournaments(): Promise<Tournament[]> {
+    const store = getMockStore();
+    return store.tournaments.map((t) => reviveTournamentDates(clone(t)));
+  }
+
+  async getActiveTournament(): Promise<Tournament | null> {
+    const store = getMockStore();
+    const t = store.tournaments.find((x) => x.status === "ACTIVE");
+    return t ? reviveTournamentDates(clone(t)) : null;
+  }
+
+  async getTournamentById(id: string): Promise<Tournament | null> {
+    const store = getMockStore();
+    const t = store.tournaments.find((x) => x.id === id);
+    return t ? reviveTournamentDates(clone(t)) : null;
+  }
+
+  async createTournament(input: CreateTournamentInput): Promise<Tournament> {
+    const store = getMockStore();
+    if (input.playerIds.length !== 7) {
+      throw new Error("Servono esattamente 7 giocatori per creare un torneo");
+    }
+
+    const shuffled = [...input.playerIds].sort(() => Math.random() - 0.5);
+    const tournamentId = crypto.randomUUID();
+
+    const players = shuffled.map((playerId, idx) => {
+      const player = store.players.find((p) => p.id === playerId);
+      if (!player) throw new Error(`Giocatore ${playerId} non trovato`);
+      return {
+        id: crypto.randomUUID(),
+        tournamentId,
+        playerId,
+        number: idx + 1,
+        player,
+      };
+    });
+
+    const totalRounds = 11;
+    const firstRound = planNextRound(
+      players.map((p) => p.number),
+      [],
+      totalRounds
+    );
+
+    const rounds: Round[] = [];
+    for (let n = 1; n <= totalRounds; n++) {
+      rounds.push({
+        id: crypto.randomUUID(),
+        tournamentId,
+        roundNumber: n,
+        weekStartAt: addDays(input.startDate, (n - 1) * 7),
+        status: "PENDING",
+        restingNumbers: n === 1 ? firstRound.resting : [],
+        match:
+          n === 1
+            ? {
+                id: crypto.randomUUID(),
+                roundId: "", // valorizzato sotto
+                team1Numbers: firstRound.team1,
+                team2Numbers: firstRound.team2,
+                sets: [],
+                winnerTeam: null,
+              }
+            : null,
+      });
+    }
+    rounds[0].match!.roundId = rounds[0].id;
+
+    const tournament: Tournament = {
+      id: tournamentId,
+      name: input.name,
+      startDate: input.startDate,
+      status: "ACTIVE",
+      currentRoundNumber: 1,
+      totalRounds,
+      createdAt: new Date(),
+      players,
+      rounds,
+    };
+
+    store.tournaments.push(tournament);
+    return reviveTournamentDates(clone(tournament));
+  }
+
+  async getRound(roundId: string): Promise<Round | null> {
+    const store = getMockStore();
+    for (const t of store.tournaments) {
+      const round = t.rounds.find((r) => r.id === roundId);
+      if (round) return reviveRoundDates(clone(round));
+    }
+    return null;
+  }
+
+  async submitMatchResult(input: SubmitResultInput): Promise<Round> {
+    const store = getMockStore();
+    for (const t of store.tournaments) {
+      const round = t.rounds.find((r) => r.id === input.roundId);
+      if (round && round.match) {
+        if (round.status === "VALIDATED") {
+          throw new Error("Il turno e' gia' stato convalidato, non puoi modificare il risultato");
+        }
+        round.match.sets = input.sets.map((s, idx) => ({
+          setNumber: idx + 1,
+          team1Games: s.team1Games,
+          team2Games: s.team2Games,
+        }));
+        round.match.winnerTeam = computeWinnerTeam(round.match.sets);
+        return reviveRoundDates(clone(round));
+      }
+    }
+    throw new Error("Turno non trovato");
+  }
+
+  async validateRound(roundId: string): Promise<{ round: Round; nextRound: Round | null }> {
+    const store = getMockStore();
+    for (const t of store.tournaments) {
+      const round = t.rounds.find((r) => r.id === roundId);
+      if (!round) continue;
+      if (!round.match || round.match.winnerTeam === null) {
+        throw new Error("Inserisci il risultato completo prima di convalidare il turno");
+      }
+      round.status = "VALIDATED";
+
+      const nextRoundNumber = round.roundNumber + 1;
+      const nextRound = t.rounds.find((r) => r.roundNumber === nextRoundNumber);
+
+      if (nextRound) {
+        const history = buildHistoryFromRounds(t.rounds);
+        const remaining = t.totalRounds - round.roundNumber;
+        const players = t.players.map((p) => p.number);
+        const generated = planNextRound(players, history, remaining);
+
+        nextRound.restingNumbers = generated.resting;
+        nextRound.match = {
+          id: crypto.randomUUID(),
+          roundId: nextRound.id,
+          team1Numbers: generated.team1,
+          team2Numbers: generated.team2,
+          sets: [],
+          winnerTeam: null,
+        };
+        t.currentRoundNumber = nextRoundNumber;
+      } else {
+        t.status = "COMPLETED";
+      }
+
+      return {
+        round: reviveRoundDates(clone(round)),
+        nextRound: nextRound ? reviveRoundDates(clone(nextRound)) : null,
+      };
+    }
+    throw new Error("Turno non trovato");
+  }
+}

@@ -1,0 +1,108 @@
+// Prisma schema per il gestionale torneo di padel.
+// In sviluppo locale senza DATABASE_URL l'app usa un repository mock in-memory
+// (vedi src/lib/data/index.ts): questo schema serve per la modalità "prisma" reale
+// e per il deploy su Vercel con Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TournamentStatus {
+  ACTIVE
+  COMPLETED
+}
+
+enum RoundStatus {
+  PENDING
+  VALIDATED
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Player {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  createdAt DateTime @default(now())
+
+  tournamentPlayers TournamentPlayer[]
+}
+
+model Tournament {
+  id                 String           @id @default(cuid())
+  name               String
+  startDate          DateTime
+  status             TournamentStatus @default(ACTIVE)
+  currentRoundNumber Int              @default(1)
+  totalRounds        Int              @default(11)
+  createdAt          DateTime         @default(now())
+
+  players TournamentPlayer[]
+  rounds  Round[]
+}
+
+// Un giocatore all'interno di un torneo specifico, con il numero 1-7 assegnato a sorteggio.
+model TournamentPlayer {
+  id           String @id @default(cuid())
+  tournamentId String
+  playerId     String
+  number       Int
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id])
+
+  @@unique([tournamentId, number])
+  @@unique([tournamentId, playerId])
+}
+
+model Round {
+  id            String      @id @default(cuid())
+  tournamentId  String
+  roundNumber   Int
+  weekStartAt   DateTime
+  status        RoundStatus @default(PENDING)
+  // numeri (1-7) dei giocatori che riposano in questo turno (sempre 3 su 7)
+  restingNumbers Int[]
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  match      Match?
+
+  @@unique([tournamentId, roundNumber])
+}
+
+model Match {
+  id      String @id @default(cuid())
+  roundId String @unique
+
+  // numeri (1-7) dei giocatori, 2 per squadra
+  team1Numbers Int[]
+  team2Numbers Int[]
+
+  winnerTeam Int? // 1 oppure 2, valorizzato quando il match è concluso
+
+  round Round     @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  sets  MatchSet[]
+}
+
+model MatchSet {
+  id         String @id @default(cuid())
+  matchId    String
+  setNumber  Int
+  team1Games Int
+  team2Games Int
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, setNumber])
+}

@@ -1,0 +1,73 @@
+// Tipi di dominio condivisi tra repository mock e repository Prisma,
+// cosi' le pagine/componenti non dipendono mai direttamente dai tipi generati da Prisma.
+
+export type TournamentStatus = "ACTIVE" | "COMPLETED";
+export type RoundStatus = "PENDING" | "VALIDATED";
+
+export interface Player {
+  id: string;
+  name: string;
+  email: string | null;
+  createdAt: Date;
+}
+
+export interface TournamentPlayer {
+  id: string;
+  tournamentId: string;
+  playerId: string;
+  number: number; // 1-7, assegnato a sorteggio
+  player: Player;
+}
+
+export interface SetScore {
+  setNumber: number;
+  team1Games: number;
+  team2Games: number;
+}
+
+export interface Match {
+  id: string;
+  roundId: string;
+  team1Numbers: [number, number];
+  team2Numbers: [number, number];
+  sets: SetScore[];
+  winnerTeam: 1 | 2 | null;
+}
+
+export interface Round {
+  id: string;
+  tournamentId: string;
+  roundNumber: number;
+  weekStartAt: Date;
+  status: RoundStatus;
+  restingNumbers: number[]; // 3 numeri giocatore (1-7) che riposano
+  match: Match | null;
+}
+
+export interface Tournament {
+  id: string;
+  name: string;
+  startDate: Date;
+  status: TournamentStatus;
+  currentRoundNumber: number;
+  totalRounds: number;
+  createdAt: Date;
+  players: TournamentPlayer[];
+  rounds: Round[];
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  passwordHash: string;
+}
+
+// Statistiche calcolate dinamicamente dallo storico dei round (mai salvate su DB).
+export interface TournamentStats {
+  // conteggi indicizzati per numero giocatore (1-7)
+  partnerCount: Record<number, Record<number, number>>;
+  opponentCount: Record<number, Record<number, number>>;
+  restCount: Record<number, number>;
+  matchesPlayed: Record<number, number>;
+}
