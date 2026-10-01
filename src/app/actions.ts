@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { getRepository } from "@/lib/data";
-import { signIn } from "@/lib/auth";
+import { signIn, auth } from "@/lib/auth";
 
 export async function loginAction(
   _prevState: { error: string | null },
@@ -53,6 +53,11 @@ const createTournamentSchema = z.object({
 });
 
 export async function createTournamentAction(formData: FormData) {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") {
+    throw new Error("Solo un amministratore puo' creare un torneo");
+  }
+
   const playerIds = formData.getAll("playerIds").map(String);
   const parsed = createTournamentSchema.parse({
     name: formData.get("name"),

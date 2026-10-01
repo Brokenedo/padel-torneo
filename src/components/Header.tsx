@@ -13,7 +13,7 @@ export async function Header() {
         {session?.user && (
           <nav className="flex items-center gap-4 text-sm">
             <Link href="/" className="hover:underline">
-              Dashboard
+              Tornei
             </Link>
             <Link href="/players" className="hover:underline">
               Giocatori

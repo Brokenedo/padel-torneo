@@ -1,8 +1,13 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getRepository } from "@/lib/data";
+import { auth } from "@/lib/auth";
 import { NewTournamentForm } from "./NewTournamentForm";
 
 export default async function NewTournamentPage() {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") redirect("/");
+
   const players = await getRepository().listPlayers();
 
   if (players.length < 7) {

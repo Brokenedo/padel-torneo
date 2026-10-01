@@ -51,7 +51,10 @@ export class MockRepository implements DataRepository {
 
   async listTournaments(): Promise<Tournament[]> {
     const store = getMockStore();
-    return store.tournaments.map((t) => reviveTournamentDates(clone(t)));
+    return store.tournaments
+      .slice()
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map((t) => reviveTournamentDates(clone(t)));
   }
 
   async getActiveTournament(): Promise<Tournament | null> {
