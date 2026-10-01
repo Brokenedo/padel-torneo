@@ -185,7 +185,7 @@ erDiagram
 
     MATCH {
         string id PK
-        string roundId FK UK "1:1 con Round"
+        string roundId FK "univoco, 1:1 con Round"
         int_array team1Numbers "2 numeri giocatore"
         int_array team2Numbers "2 numeri giocatore"
         int winnerTeam "1 | 2 | null"
