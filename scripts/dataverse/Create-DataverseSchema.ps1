@@ -482,10 +482,12 @@ function Add-DataverseAlternateKeys([hashtable]$Table, [string]$Prefix) {
     $entityLogicalName = "$Prefix$($Table.Name)"
     foreach ($key in $Table.AlternateKeys) {
         $keySchemaName = "$Prefix$($key.Name)"
+        # Le singole Key non si possono indirizzare per SchemaName tra parentesi (non e' una
+        # chiave valida per EntityKeyMetadata): bisogna filtrare sulla collection.
         $existing = Invoke-Dataverse -Method GET `
-            -Path "EntityDefinitions(LogicalName='$entityLogicalName')/Keys(SchemaName='$keySchemaName')?`$select=SchemaName" `
+            -Path "EntityDefinitions(LogicalName='$entityLogicalName')/Keys?`$filter=SchemaName eq '$keySchemaName'&`$select=SchemaName" `
             -AllowNotFound
-        if ($null -ne $existing) {
+        if ($null -ne $existing -and $existing.value.Count -gt 0) {
             Write-Host "    [=] Chiave alternativa $keySchemaName gia' presente" -ForegroundColor DarkGray
             continue
         }
