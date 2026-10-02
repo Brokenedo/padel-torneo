@@ -50,22 +50,36 @@
 .PARAMETER ClientSecret
   Client secret della App Registration.
 
+.NOTES
+  SICUREZZA: non passare mai -ClientSecret come argomento letterale su una riga di
+  comando condivisa/salvata (finisce nella cronologia della shell in chiaro). Imposta
+  invece le variabili d'ambiente DATAVERSE_URL / DATAVERSE_TENANT_ID /
+  DATAVERSE_CLIENT_ID / DATAVERSE_CLIENT_SECRET prima di lanciare lo script (i
+  parametri, se omessi, vengono letti automaticamente da li'). Se hai gia' passato un
+  client secret in chiaro nel terminale, considéralo compromesso e rigeneralo subito
+  dall'App Registration in Microsoft Entra ID.
+
 .EXAMPLE
-  ./Create-DataverseSchema.ps1 -DataverseUrl "https://org12345.crm4.dynamics.com" `
-    -TenantId "11111111-1111-1111-1111-111111111111" `
-    -ClientId "22222222-2222-2222-2222-222222222222" `
-    -ClientSecret "il-tuo-client-secret"
+  $env:DATAVERSE_URL = "https://org12345.crm4.dynamics.com"
+  $env:DATAVERSE_TENANT_ID = "11111111-1111-1111-1111-111111111111"
+  $env:DATAVERSE_CLIENT_ID = "22222222-2222-2222-2222-222222222222"
+  $env:DATAVERSE_CLIENT_SECRET = Read-Host "Client secret" -AsSecureString | ConvertFrom-SecureString -AsPlainText
+  ./Create-DataverseSchema.ps1
 #>
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)][string]$DataverseUrl,
-    [Parameter(Mandatory = $true)][string]$TenantId,
-    [Parameter(Mandatory = $true)][string]$ClientId,
-    [Parameter(Mandatory = $true)][string]$ClientSecret,
+    [Parameter(Mandatory = $false)][string]$DataverseUrl = $env:DATAVERSE_URL,
+    [Parameter(Mandatory = $false)][string]$TenantId = $env:DATAVERSE_TENANT_ID,
+    [Parameter(Mandatory = $false)][string]$ClientId = $env:DATAVERSE_CLIENT_ID,
+    [Parameter(Mandatory = $false)][string]$ClientSecret = $env:DATAVERSE_CLIENT_SECRET,
     [string]$Prefix = "edo_",
     [int]$LanguageCode = 1033
 )
+
+if (-not $DataverseUrl -or -not $TenantId -or -not $ClientId -or -not $ClientSecret) {
+    throw "Credenziali mancanti: imposta DATAVERSE_URL/DATAVERSE_TENANT_ID/DATAVERSE_CLIENT_ID/DATAVERSE_CLIENT_SECRET (variabili d'ambiente) oppure passa i parametri -DataverseUrl/-TenantId/-ClientId/-ClientSecret."
+}
 
 $ErrorActionPreference = "Stop"
 $ApiVersion = "v9.2"
@@ -161,6 +175,7 @@ $Tables = @(
         PrimaryColumn = "name"
         PrimaryMax    = 200
         Columns       = @(
+            @{ Name = "sourceid";     Type = "Text";     Max = 100; Required = $true } # id Postgres, chiave di sincronizzazione
             @{ Name = "username";     Type = "Text";     Max = 100 }
             @{ Name = "email";        Type = "Text";     Max = 150; Required = $true }
             @{ Name = "passwordhash"; Type = "Text";     Max = 500 } # vedi nota di sicurezza in testa al file
@@ -168,6 +183,7 @@ $Tables = @(
             @{ Name = "createdat";    Type = "DateTime" }
         )
         AlternateKeys = @(
+            @{ Name = "sourceid_key"; Attributes = @("sourceid") }
             @{ Name = "username_key"; Attributes = @("username") }
             @{ Name = "email_key";    Attributes = @("email") }
         )
@@ -178,8 +194,12 @@ $Tables = @(
         PrimaryColumn = "name"
         PrimaryMax    = 200
         Columns       = @(
+            @{ Name = "sourceid"; Type = "Text"; Max = 100; Required = $true }
             @{ Name = "email";     Type = "Text"; Max = 150 }
             @{ Name = "createdat"; Type = "DateTime" }
+        )
+        AlternateKeys = @(
+            @{ Name = "sourceid_key"; Attributes = @("sourceid") }
         )
     },
     @{
@@ -188,12 +208,16 @@ $Tables = @(
         PrimaryColumn = "name"
         PrimaryMax    = 200
         Columns       = @(
+            @{ Name = "sourceid";           Type = "Text"; Max = 100; Required = $true }
             @{ Name = "startdate";          Type = "DateTime" }
-            @{ Name = "status";             Type = "Choice"; Options = @("ACTIVE", "COMPLETED"); Default = "ACTIVE" }
-            @{ Name = "scoringmode";        Type = "Choice"; Options = @("VOLLEYBALL", "WIN_ONLY", "SETS_WON"); Default = "VOLLEYBALL" }
-            @{ Name = "currentroundnumber"; Type = "Integer"; Default = 1 }
-            @{ Name = "totalrounds";        Type = "Integer"; Default = 11 }
+            @{ Name = "status";             Type = "Choice"; Options = @("ACTIVE", "COMPLETED") }
+            @{ Name = "scoringmode";        Type = "Choice"; Options = @("VOLLEYBALL", "WIN_ONLY", "SETS_WON") }
+            @{ Name = "currentroundnumber"; Type = "Integer" }
+            @{ Name = "totalrounds";        Type = "Integer" }
             @{ Name = "createdat";          Type = "DateTime" }
+        )
+        AlternateKeys = @(
+            @{ Name = "sourceid_key"; Attributes = @("sourceid") }
         )
     },
     @{
@@ -202,9 +226,11 @@ $Tables = @(
         PrimaryColumn = "name" # etichetta sintetica, es. "Torneo X - #3"
         PrimaryMax    = 200
         Columns       = @(
+            @{ Name = "sourceid"; Type = "Text"; Max = 100; Required = $true }
             @{ Name = "number"; Type = "Integer"; Required = $true }
         )
         AlternateKeys = @(
+            @{ Name = "sourceid_key";          Attributes = @("sourceid") }
             @{ Name = "tournament_number_key"; Attributes = @("tournament", "number") }
             @{ Name = "tournament_player_key"; Attributes = @("tournament", "player") }
         )
@@ -215,12 +241,14 @@ $Tables = @(
         PrimaryColumn = "name" # es. "Turno 3"
         PrimaryMax    = 200
         Columns       = @(
+            @{ Name = "sourceid";        Type = "Text"; Max = 100; Required = $true }
             @{ Name = "roundnumber";     Type = "Integer"; Required = $true }
             @{ Name = "weekstartat";     Type = "DateTime" }
-            @{ Name = "status";          Type = "Choice"; Options = @("PENDING", "VALIDATED"); Default = "PENDING" }
+            @{ Name = "status";          Type = "Choice"; Options = @("PENDING", "VALIDATED") }
             @{ Name = "restingnumbers";  Type = "MultiChoice"; Options = @("1", "2", "3", "4", "5", "6", "7") }
         )
         AlternateKeys = @(
+            @{ Name = "sourceid_key"; Attributes = @("sourceid") }
             @{ Name = "tournament_roundnumber_key"; Attributes = @("tournament", "roundnumber") }
         )
     },
@@ -230,12 +258,14 @@ $Tables = @(
         PrimaryColumn = "name"
         PrimaryMax    = 200
         Columns       = @(
+            @{ Name = "sourceid";     Type = "Text"; Max = 100; Required = $true }
             @{ Name = "team1numbers"; Type = "MultiChoice"; Options = @("1", "2", "3", "4", "5", "6", "7") }
             @{ Name = "team2numbers"; Type = "MultiChoice"; Options = @("1", "2", "3", "4", "5", "6", "7") }
             @{ Name = "winnerteam";   Type = "Choice"; Options = @("1", "2") }
         )
         AlternateKeys = @(
-            @{ Name = "round_key"; Attributes = @("round") } # round Ã¨ 1:1, l'alternate key lo rende univoco
+            @{ Name = "sourceid_key"; Attributes = @("sourceid") }
+            @{ Name = "round_key"; Attributes = @("round") } # round e' 1:1, l'alternate key lo rende univoco
         )
     },
     @{
@@ -244,11 +274,14 @@ $Tables = @(
         PrimaryColumn = "name"
         PrimaryMax    = 200
         Columns       = @(
+            # sourceid = "{matchId}_{setNumber}", NON l'id della riga MatchSet (che viene ricreata ad ogni nuovo inserimento risultato)
+            @{ Name = "sourceid";    Type = "Text"; Max = 100; Required = $true }
             @{ Name = "setnumber";   Type = "Integer"; Required = $true }
             @{ Name = "team1games";  Type = "Integer"; Required = $true }
             @{ Name = "team2games";  Type = "Integer"; Required = $true }
         )
         AlternateKeys = @(
+            @{ Name = "sourceid_key"; Attributes = @("sourceid") }
             @{ Name = "match_setnumber_key"; Attributes = @("match", "setnumber") }
         )
     }
@@ -290,7 +323,9 @@ function New-SimpleAttributeBody([hashtable]$Column, [string]$Prefix) {
             }
         }
         "Integer" {
-            $body = @{
+            # Dataverse non supporta un valore di default a livello di metadata colonna:
+            # i default (es. totalRounds=11) li imposta l'app quando sincronizza il record.
+            return @{
                 "@odata.type"  = "Microsoft.Dynamics.CRM.IntegerAttributeMetadata"
                 SchemaName     = $logicalName
                 DisplayName    = $display
@@ -299,8 +334,6 @@ function New-SimpleAttributeBody([hashtable]$Column, [string]$Prefix) {
                 MinValue       = -2147483648
                 MaxValue       = 2147483647
             }
-            if ($null -ne $Column.Default) { $body["DefaultValue"] = $Column.Default }
-            return $body
         }
         "DateTime" {
             return @{
