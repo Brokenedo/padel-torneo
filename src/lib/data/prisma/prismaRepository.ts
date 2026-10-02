@@ -1,10 +1,19 @@
 import { addDays } from "date-fns";
 import bcrypt from "bcryptjs";
+import { after } from "next/server";
 import { prisma } from "../../prisma";
 import { DataRepository, CreateTournamentInput, CreateUserInput, SubmitResultInput } from "../repository";
 import { Player, Tournament, Round, Match, SetScore, AppUser } from "../../types";
 import { generateFullSchedule } from "../../pairing";
 import { computeWinnerTeam } from "../../matchLogic";
+import {
+  syncPlayer,
+  syncAdminUser,
+  syncTournamentCreated,
+  syncTournamentDeleted,
+  syncMatchResult,
+  syncRoundValidated,
+} from "../../dataverse/sync";
 import type {
   Player as PrismaPlayer,
   Round as PrismaRound,
@@ -119,7 +128,7 @@ export class PrismaRepository implements DataRepository {
 
     const passwordHash = await bcrypt.hash(input.password, 10);
 
-    const [user] = await prisma.$transaction([
+    const [user, player] = await prisma.$transaction([
       prisma.adminUser.create({
         data: { username: input.username, email, name: input.username, passwordHash, isAdmin: input.isAdmin },
       }),
@@ -127,7 +136,7 @@ export class PrismaRepository implements DataRepository {
       prisma.player.create({ data: { name: input.username, email } }),
     ]);
 
-    return {
+    const appUser: AppUser = {
       id: user.id,
       username: user.username,
       email: user.email,
@@ -135,6 +144,9 @@ export class PrismaRepository implements DataRepository {
       isAdmin: user.isAdmin,
       createdAt: user.createdAt,
     };
+    after(() => syncAdminUser(appUser));
+    after(() => syncPlayer(player));
+    return appUser;
   }
 
   async listPlayers(): Promise<Player[]> {
@@ -144,7 +156,9 @@ export class PrismaRepository implements DataRepository {
 
   async createPlayer(input: { name: string; email?: string | null }): Promise<Player> {
     const player = await prisma.player.create({ data: { name: input.name, email: input.email ?? null } });
-    return mapPlayer(player);
+    const mapped = mapPlayer(player);
+    after(() => syncPlayer(mapped));
+    return mapped;
   }
 
   async listTournaments(): Promise<Tournament[]> {
@@ -208,7 +222,9 @@ export class PrismaRepository implements DataRepository {
       include: tournamentInclude,
     });
 
-    return mapTournament(created as TournamentWithRelations);
+    const tournament = mapTournament(created as TournamentWithRelations);
+    after(() => syncTournamentCreated(tournament));
+    return tournament;
   }
 
   async deleteTournament(id: string, requestedByUserId: string): Promise<void> {
@@ -221,6 +237,7 @@ export class PrismaRepository implements DataRepository {
       throw new Error("Solo chi ha creato il torneo puo' eliminarlo");
     }
     await prisma.tournament.delete({ where: { id } });
+    after(() => syncTournamentDeleted(id));
   }
 
   async getRound(roundId: string): Promise<Round | null> {
@@ -261,7 +278,9 @@ export class PrismaRepository implements DataRepository {
       prisma.match.update({ where: { id: round.match.id }, data: { winnerTeam } }),
     ]);
 
-    return (await this.getRound(input.roundId))!;
+    const updatedRound = (await this.getRound(input.roundId))!;
+    after(() => syncMatchResult(updatedRound));
+    return updatedRound;
   }
 
   async validateRound(roundId: string): Promise<{ round: Round; nextRound: Round | null }> {
@@ -283,17 +302,26 @@ export class PrismaRepository implements DataRepository {
       where: { tournamentId: round.tournamentId, roundNumber: nextRoundNumber },
     });
 
+    let tournamentStatus: "ACTIVE" | "COMPLETED" = "ACTIVE";
     if (nextRoundExisting) {
       await prisma.tournament.update({
         where: { id: round.tournamentId },
         data: { currentRoundNumber: nextRoundNumber },
       });
     } else {
+      tournamentStatus = "COMPLETED";
       await prisma.tournament.update({ where: { id: round.tournamentId }, data: { status: "COMPLETED" } });
     }
 
     const validatedRound = await this.getRound(roundId);
     const nextRound = nextRoundExisting ? await this.getRound(nextRoundExisting.id) : null;
+    after(() =>
+      syncRoundValidated(validatedRound!, {
+        id: round.tournamentId,
+        currentRoundNumber: nextRoundExisting ? nextRoundNumber : round.roundNumber,
+        status: tournamentStatus,
+      })
+    );
     return { round: validatedRound!, nextRound };
   }
 }
