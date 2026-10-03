@@ -7,13 +7,15 @@ import { TournamentStats } from "@/lib/types";
 import { RoundMatchCard } from "@/components/RoundMatchCard";
 import { StandingsTable } from "@/components/StandingsTable";
 import { StatsMatrices } from "@/components/StatsMatrices";
+import { PlayerWorkloadDashboard } from "@/components/PlayerWorkloadDashboard";
 
-type Tab = "partite" | "classifica" | "giocatori" | "statistiche";
+type Tab = "partite" | "classifica" | "giocatori" | "dashboard" | "statistiche";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "partite", label: "Partite" },
   { id: "classifica", label: "Classifica" },
   { id: "giocatori", label: "Giocatori" },
+  { id: "dashboard", label: "Dashboard" },
   { id: "statistiche", label: "Statistiche" },
 ];
 
@@ -79,6 +81,10 @@ export function TournamentTabs({
               </div>
             ))}
         </div>
+      )}
+
+      {activeTab === "dashboard" && (
+        <PlayerWorkloadDashboard players={tournament.players} rounds={tournament.rounds} />
       )}
 
       {activeTab === "statistiche" && (
