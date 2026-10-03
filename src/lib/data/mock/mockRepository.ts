@@ -132,6 +132,7 @@ export class MockRepository implements DataRepository {
 
     const shuffled = [...input.playerIds].sort(() => Math.random() - 0.5);
     const tournamentId = crypto.randomUUID();
+    const avoidExtraMatchesSet = new Set(input.avoidExtraMatchesPlayerIds);
 
     const players = shuffled.map((playerId, idx) => {
       const player = store.players.find((p) => p.id === playerId);
@@ -141,17 +142,20 @@ export class MockRepository implements DataRepository {
         tournamentId,
         playerId,
         number: idx + 1,
+        avoidsExtraMatches: avoidExtraMatchesSet.has(playerId),
         player,
       };
     });
 
     const totalRounds = 11;
+    const avoidExtraMatchNumbers = players.filter((p) => p.avoidsExtraMatches).map((p) => p.number);
     // Calendario completo calcolato subito alla creazione: tutti i turni mostrano
     // gia' gli accoppiamenti, ma restano "bloccati" (vedi submitMatchResult/validateRound)
     // finche' non e' il loro turno (currentRoundNumber).
     const schedule = generateFullSchedule(
       players.map((p) => p.number),
-      totalRounds
+      totalRounds,
+      avoidExtraMatchNumbers
     );
 
     const rounds: Round[] = schedule.map((generated, i) => {

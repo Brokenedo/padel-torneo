@@ -19,6 +19,7 @@ export interface TournamentPlayer {
   tournamentId: string;
   playerId: string;
   number: number; // 1-7, assegnato a sorteggio
+  avoidsExtraMatches: boolean; // preferenza: non fare piu' partite degli altri
   player: Player;
 }
 

@@ -73,10 +73,14 @@ model Tournament {
 
 // Un giocatore all'interno di un torneo specifico, con il numero 1-7 assegnato a sorteggio.
 model TournamentPlayer {
-  id           String @id @default(cuid())
+  id           String  @id @default(cuid())
   tournamentId String
   playerId     String
   number       Int
+  // preferenza espressa alla creazione del torneo: se true, l'algoritmo di
+  // generazione del calendario cerca di non assegnargli partite in piu' degli altri
+  // (vincolo "soft", non sempre rispettabile al 100% per vincoli matematici).
+  avoidsExtraMatches Boolean @default(false)
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   player     Player     @relation(fields: [playerId], references: [id])

@@ -86,6 +86,7 @@ function mapTournament(t: TournamentWithRelations): Tournament {
       tournamentId: tp.tournamentId,
       playerId: tp.playerId,
       number: tp.number,
+      avoidsExtraMatches: tp.avoidsExtraMatches,
       player: mapPlayer(tp.player),
     })),
     rounds: t.rounds.map(mapRound),
@@ -190,10 +191,14 @@ export class PrismaRepository implements DataRepository {
     const shuffled = [...input.playerIds].sort(() => Math.random() - 0.5);
     const totalRounds = 11;
     const numbers = shuffled.map((_, idx) => idx + 1);
+    const avoidExtraMatchesSet = new Set(input.avoidExtraMatchesPlayerIds);
+    const avoidExtraMatchNumbers = shuffled
+      .map((playerId, idx) => (avoidExtraMatchesSet.has(playerId) ? idx + 1 : null))
+      .filter((n): n is number => n !== null);
     // Calendario completo calcolato subito alla creazione: tutti i turni mostrano
     // gia' gli accoppiamenti, ma restano "bloccati" (vedi submitMatchResult/validateRound)
     // finche' non e' il loro turno (currentRoundNumber).
-    const schedule = generateFullSchedule(numbers, totalRounds);
+    const schedule = generateFullSchedule(numbers, totalRounds, avoidExtraMatchNumbers);
 
     const created = await prisma.tournament.create({
       data: {
@@ -203,7 +208,11 @@ export class PrismaRepository implements DataRepository {
         totalRounds,
         createdById: input.createdById,
         players: {
-          create: shuffled.map((playerId, idx) => ({ playerId, number: idx + 1 })),
+          create: shuffled.map((playerId, idx) => ({
+            playerId,
+            number: idx + 1,
+            avoidsExtraMatches: avoidExtraMatchesSet.has(playerId),
+          })),
         },
         rounds: {
           create: schedule.map((generated, i) => ({

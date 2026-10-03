@@ -70,12 +70,18 @@ function SubmitButton({ canSubmit }: { canSubmit: boolean }) {
 
 export function NewTournamentForm({ players }: { players: Player[] }) {
   const [selected, setSelected] = useState<string[]>([]);
+  const [avoidExtraMatches, setAvoidExtraMatches] = useState<string[]>([]);
   const [scoringMode, setScoringMode] = useState<ScoringMode>("VOLLEYBALL");
 
   function toggle(id: string) {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 7 ? [...prev, id] : prev
     );
+    setAvoidExtraMatches((prev) => prev.filter((x) => x !== id));
+  }
+
+  function toggleAvoidExtraMatches(id: string) {
+    setAvoidExtraMatches((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   return (
@@ -168,6 +174,39 @@ export function NewTournamentForm({ players }: { players: Player[] }) {
               );
             })}
           </div>
+          {selected.length > 0 && (
+            <div className="space-y-1 pt-1">
+              <p className="text-xs text-slate-500">
+                Giocatori selezionati che non vogliono fare piu&apos; partite degli altri
+                (se matematicamente non evitabile, l&apos;eccedenza ricade sugli altri):
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {players
+                  .filter((p) => selected.includes(p.id))
+                  .map((p) => {
+                    const checked = avoidExtraMatches.includes(p.id);
+                    return (
+                      <label
+                        key={p.id}
+                        className={`border rounded-xl px-3 py-2 text-xs flex items-center gap-2 cursor-pointer transition-colors ${
+                          checked ? "border-primary bg-primary/5" : "border-slate-200"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          name="avoidExtraMatchesPlayerIds"
+                          value={p.id}
+                          checked={checked}
+                          onChange={() => toggleAvoidExtraMatches(p.id)}
+                          className="accent-primary"
+                        />
+                        {p.name}
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
         </div>
 
         <SubmitButton canSubmit={selected.length === 7} />

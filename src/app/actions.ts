@@ -84,6 +84,7 @@ const createTournamentSchema = z.object({
   name: z.string().trim().min(2, "Il nome del torneo e' obbligatorio"),
   startDate: z.string().min(1, "La data di inizio e' obbligatoria"),
   playerIds: z.array(z.string()).length(7, "Devi selezionare esattamente 7 giocatori"),
+  avoidExtraMatchesPlayerIds: z.array(z.string()).default([]),
   scoringMode: z.enum(["VOLLEYBALL", "WIN_ONLY", "SETS_WON"], {
     message: "Seleziona una modalita' di punteggio",
   }),
@@ -96,10 +97,12 @@ export async function createTournamentAction(formData: FormData) {
   }
 
   const playerIds = formData.getAll("playerIds").map(String);
+  const avoidExtraMatchesPlayerIds = formData.getAll("avoidExtraMatchesPlayerIds").map(String);
   const parsed = createTournamentSchema.parse({
     name: formData.get("name"),
     startDate: formData.get("startDate"),
     playerIds,
+    avoidExtraMatchesPlayerIds,
     scoringMode: formData.get("scoringMode"),
   });
 
@@ -107,6 +110,8 @@ export async function createTournamentAction(formData: FormData) {
     name: parsed.name,
     startDate: new Date(parsed.startDate),
     playerIds: parsed.playerIds,
+    // ignora eventuali id non tra i 7 selezionati (es. manomissione del form)
+    avoidExtraMatchesPlayerIds: parsed.avoidExtraMatchesPlayerIds.filter((id) => parsed.playerIds.includes(id)),
     scoringMode: parsed.scoringMode,
     createdById: session.user.id,
   });

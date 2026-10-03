@@ -4,6 +4,8 @@ export interface CreateTournamentInput {
   name: string;
   startDate: Date;
   playerIds: string[]; // esattamente 7 Player id
+  // sottoinsieme di playerIds: giocatori che preferiscono non fare piu' partite degli altri
+  avoidExtraMatchesPlayerIds: string[];
   scoringMode: ScoringMode;
   createdById: string;
 }

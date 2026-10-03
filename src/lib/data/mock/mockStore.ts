@@ -43,6 +43,7 @@ function seed(): MockStore {
     tournamentId: "seed-tournament-1",
     playerId: p.id,
     number: i + 1,
+    avoidsExtraMatches: false,
     player: p,
   }));
 
