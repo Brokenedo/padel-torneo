@@ -34,13 +34,13 @@ export function TournamentTabs({
 
   return (
     <div className="space-y-6">
-      <div className="inline-flex bg-white rounded-xl shadow-sm p-1 gap-1">
+      <div className="flex overflow-x-auto max-w-full bg-white rounded-xl shadow-sm p-1 gap-1">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`px-6 py-2 text-sm rounded-lg font-semibold transition-colors cursor-pointer ${
+            className={`shrink-0 whitespace-nowrap px-4 sm:px-6 py-2 text-sm rounded-lg font-semibold transition-colors cursor-pointer ${
               activeTab === tab.id
                 ? "bg-primary text-white"
                 : "text-slate-500 hover:text-slate-700"
