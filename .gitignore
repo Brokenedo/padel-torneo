@@ -42,3 +42,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# script locali distruttivi (wipe DB), mai da pushare
+scripts/local-only/
