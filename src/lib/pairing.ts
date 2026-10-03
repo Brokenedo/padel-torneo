@@ -21,18 +21,18 @@
 export type PlayerNumber = number; // 1-7
 
 // Fattore di sconto sul costo di riposo per i giocatori che preferiscono non fare
-// piu' partite degli altri: rende il loro riposo ripetuto "meno caro" per il
-// solver, cosi' l'ottimizzatore li fa riposare piu' spesso degli altri.
+// piu' partite degli altri: rende il loro riposo "meno caro" per il solver FINCHE'
+// non hanno raggiunto la loro "quota equa" di riposi (restTarget); oltre quella
+// soglia il costo torna normale, per evitare che vengano fatti riposare PIU' del
+// dovuto (bug: senza il tetto, il solver poteva spingerli sotto la quota minima
+// di partite comune agli altri giocatori non contrassegnati).
 const AVOID_EXTRA_MATCH_REST_WEIGHT = 1.75;
 
-function buildRestWeights(
-  players: PlayerNumber[],
-  avoidExtraMatchNumbers: PlayerNumber[]
-): Map<PlayerNumber, number> {
-  const avoidSet = new Set(avoidExtraMatchNumbers);
-  const weights = new Map<PlayerNumber, number>();
-  for (const p of players) weights.set(p, avoidSet.has(p) ? AVOID_EXTRA_MATCH_REST_WEIGHT : 1);
-  return weights;
+function restCostFor(countSoFar: number, isAvoidExtra: boolean, restTarget: number): number {
+  if (isAvoidExtra && countSoFar < restTarget) {
+    return (countSoFar * countSoFar) / AVOID_EXTRA_MATCH_REST_WEIGHT;
+  }
+  return countSoFar * countSoFar;
 }
 
 export interface RoundHistoryEntry {
@@ -120,12 +120,12 @@ function scoreCandidate(
   team1: [PlayerNumber, PlayerNumber],
   team2: [PlayerNumber, PlayerNumber],
   jitter: number,
-  restWeights: Map<PlayerNumber, number>
+  avoidSet: Set<PlayerNumber>,
+  restTarget: number
 ): number {
   const restCost = resting.reduce((sum, r) => {
     const count = counters.rest.get(r) ?? 0;
-    const weight = restWeights.get(r) ?? 1;
-    return sum + (count * count) / weight;
+    return sum + restCostFor(count, avoidSet.has(r), restTarget);
   }, 0);
 
   const partnerCost =
@@ -165,15 +165,30 @@ export function generateNextRound(
   players: PlayerNumber[],
   history: RoundHistoryEntry[],
   rng: () => number = Math.random,
-  avoidExtraMatchNumbers: PlayerNumber[] = []
+  avoidExtraMatchNumbers: PlayerNumber[] = [],
+  restTarget: number = Infinity
 ): GeneratedRound {
   if (players.length !== 7) {
     throw new Error("Il torneo richiede esattamente 7 giocatori");
   }
 
   const counters = buildCounters(players, history);
-  const restWeights = buildRestWeights(players, avoidExtraMatchNumbers);
-  const candidates = allCandidates(players);
+  const avoidSet = new Set(avoidExtraMatchNumbers);
+
+  // Vincolo "duro": un giocatore con la preferenza che ha gia' raggiunto la sua
+  // quota equa di riposi non puo' piu' essere scelto per riposare di nuovo (a meno
+  // che non resti nessuna combinazione valida alternativa). Senza questo filtro lo
+  // sconto sul costo e' solo un incentivo "morbido": la ricerca stocastica potrebbe
+  // comunque sceglierlo per compagni/avversari migliori altrove, facendolo scendere
+  // sotto la quota minima di partite comune agli altri (bug segnalato dall'utente).
+  const atTarget = new Set(
+    players.filter((p) => avoidSet.has(p) && (counters.rest.get(p) ?? 0) >= restTarget)
+  );
+  let candidates = allCandidates(players);
+  if (atTarget.size > 0) {
+    const filtered = candidates.filter((c) => !c.resting.some((r) => atTarget.has(r)));
+    if (filtered.length > 0) candidates = filtered;
+  }
 
   let bestCost = Infinity;
   let best: GeneratedRound = {
@@ -184,7 +199,7 @@ export function generateNextRound(
 
   for (const c of candidates) {
     const jitter = rng() * 1e-6;
-    const cost = scoreCandidate(counters, c.resting, c.team1, c.team2, jitter, restWeights);
+    const cost = scoreCandidate(counters, c.resting, c.team1, c.team2, jitter, avoidSet, restTarget);
     if (cost < bestCost) {
       bestCost = cost;
       best = { team1: c.team1, team2: c.team2, resting: c.resting as [PlayerNumber, PlayerNumber, PlayerNumber] };
@@ -197,14 +212,15 @@ export function generateNextRound(
 function totalImbalanceCost(
   players: PlayerNumber[],
   history: RoundHistoryEntry[],
-  avoidExtraMatchNumbers: PlayerNumber[] = []
+  avoidExtraMatchNumbers: PlayerNumber[] = [],
+  restTarget: number = Infinity
 ): number {
   const counters = buildCounters(players, history);
-  const restWeights = buildRestWeights(players, avoidExtraMatchNumbers);
+  const avoidSet = new Set(avoidExtraMatchNumbers);
   let cost = 0;
   for (const count of counters.partner.values()) cost += count * count;
   for (const count of counters.opponent.values()) cost += count * count;
-  for (const [player, count] of counters.rest) cost += (count * count) / (restWeights.get(player) ?? 1);
+  for (const [player, count] of counters.rest) cost += restCostFor(count, avoidSet.has(player), restTarget);
   return cost;
 }
 
@@ -220,7 +236,8 @@ export function planNextRound(
   history: RoundHistoryEntry[],
   remainingRounds: number,
   attempts = 400,
-  avoidExtraMatchNumbers: PlayerNumber[] = []
+  avoidExtraMatchNumbers: PlayerNumber[] = [],
+  restTarget: number = Infinity
 ): GeneratedRound {
   if (remainingRounds <= 0) {
     throw new Error("Nessun turno rimanente da pianificare");
@@ -234,12 +251,12 @@ export function planNextRound(
     let firstRound: GeneratedRound | null = null;
 
     for (let step = 0; step < remainingRounds; step++) {
-      const next = generateNextRound(players, simulatedHistory, Math.random, avoidExtraMatchNumbers);
+      const next = generateNextRound(players, simulatedHistory, Math.random, avoidExtraMatchNumbers, restTarget);
       if (step === 0) firstRound = next;
       simulatedHistory.push(next);
     }
 
-    const score = totalImbalanceCost(players, simulatedHistory, avoidExtraMatchNumbers);
+    const score = totalImbalanceCost(players, simulatedHistory, avoidExtraMatchNumbers, restTarget);
     if (score < bestScore) {
       bestScore = score;
       bestFirstRound = firstRound;
@@ -255,10 +272,18 @@ export function generateFullSchedule(
   totalRounds: number,
   avoidExtraMatchNumbers: PlayerNumber[] = []
 ): GeneratedRound[] {
+  // Quota "equa" di riposi che un giocatore con la preferenza puo' raggiungere al
+  // massimo (oltre non viene piu' favorito): arrotondata per eccesso in modo che
+  // corrisponda al gruppo di giocatori con PIU' riposi (quindi MENO partite) tra
+  // quelli possibili con un numero totale di turni non divisibile esattamente per
+  // il numero di giocatori.
+  const totalRestSlots = 3 * totalRounds;
+  const restTarget = Math.ceil(totalRestSlots / players.length);
+
   const history: RoundHistoryEntry[] = [];
   const schedule: GeneratedRound[] = [];
   for (let i = 0; i < totalRounds; i++) {
-    const next = planNextRound(players, history, totalRounds - i, 400, avoidExtraMatchNumbers);
+    const next = planNextRound(players, history, totalRounds - i, 400, avoidExtraMatchNumbers, restTarget);
     schedule.push(next);
     history.push(next);
   }
