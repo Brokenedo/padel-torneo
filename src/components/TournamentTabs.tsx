@@ -16,7 +16,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "classifica", label: "Classifica" },
   { id: "giocatori", label: "Giocatori" },
   { id: "dashboard", label: "Dashboard" },
-  { id: "statistiche", label: "Statistiche" },
+//  { id: "statistiche", label: "Statistiche" },
 ];
 
 export function TournamentTabs({
