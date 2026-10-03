@@ -11,13 +11,13 @@ function StatusBadge({ round, isActive }: { round: Round; isActive: boolean }) {
       </span>
     );
   }
-  if (!isActive) {
+ /* if (!isActive) {
     return (
       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-400">
         in attesa
       </span>
     );
-  }
+  }*/
   if (round.match && round.match.winnerTeam !== null) {
     return (
       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-100 text-amber-700">
@@ -80,7 +80,7 @@ export function RoundMatchCard({
                   max={7}
                   name={`set${n}team1`}
                   defaultValue={existing?.team1Games ?? ""}
-                  disabled={isLocked || round.status === "VALIDATED"}
+                  disabled={ round.status === "VALIDATED"}
                   className="w-14 h-10 text-center border border-slate-200 rounded-lg disabled:bg-slate-50 disabled:text-slate-400"
                 />
               );
@@ -101,7 +101,7 @@ export function RoundMatchCard({
                   max={7}
                   name={`set${n}team2`}
                   defaultValue={existing?.team2Games ?? ""}
-                  disabled={isLocked || round.status === "VALIDATED"}
+                  disabled={ round.status === "VALIDATED"}
                   className="w-14 h-10 text-center border border-slate-200 rounded-lg disabled:bg-slate-50 disabled:text-slate-400"
                 />
               );
@@ -112,7 +112,7 @@ export function RoundMatchCard({
             Riposano: {round.restingNumbers.map(name).join(", ")}
           </p>
 
-          {isActive && round.status !== "VALIDATED" && (
+          { round.status !== "VALIDATED" && (
             <div className="flex items-center gap-3 pt-1">
               <button
                 type="submit"

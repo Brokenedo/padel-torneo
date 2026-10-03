@@ -266,9 +266,9 @@ export class PrismaRepository implements DataRepository {
     if (round.status === "VALIDATED") {
       throw new Error("Il turno e' gia' stato convalidato, non puoi modificare il risultato");
     }
-    if (round.roundNumber !== round.tournament.currentRoundNumber) {
+   /* if (round.roundNumber !== round.tournament.currentRoundNumber) {
       throw new Error("Questo turno non e' ancora attivo: convalida prima i turni precedenti");
-    }
+    }*/
 
     const winnerTeam = computeWinnerTeam(
       input.sets.map((s, idx) => ({ setNumber: idx + 1, ...s }))
@@ -300,9 +300,9 @@ export class PrismaRepository implements DataRepository {
     if (!round || !round.match || round.match.winnerTeam === null) {
       throw new Error("Inserisci il risultato completo prima di convalidare il turno");
     }
-    if (round.roundNumber !== round.tournament.currentRoundNumber) {
+    /*if (round.roundNumber !== round.tournament.currentRoundNumber) {
       throw new Error("Questo turno non e' ancora attivo: convalida prima i turni precedenti");
-    }
+    }*/
 
     await prisma.round.update({ where: { id: roundId }, data: { status: "VALIDATED" } });
 
