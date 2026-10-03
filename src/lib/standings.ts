@@ -15,7 +15,7 @@ export interface PlayerStanding {
   setDiff: number;
   gameDiff: number;
   setDiffPerMatch: number; // 1° spareggio: (set vinti - set persi) / partite giocate
-  gameDiffPerMatch: number; // 2° spareggio: (game vinti - game persi) / partite giocate
+  gameWinPct: number; // 2° spareggio: game vinti / (game vinti + game persi)
   /** Posizione in classifica: stringa perche' gli ex aequo condividono lo stesso numero
    * seguito da "=" (es. "2=", "2="), stile classifiche sportive. */
   rank: string;
@@ -77,11 +77,12 @@ function computeHeadToHeadScores(
 }
 
 // Criteri di spareggio numerici, in ordine: media punti (gia' usata per il raggruppamento
-// di partenza), differenza set/partita, differenza game/partita.
+// di partenza), differenza set/partita, percentuale di game vinti (non dipende da quanti
+// game si sono giocati in totale, a differenza della differenza assoluta).
 const TIEBREAK_CRITERIA: Array<(p: PlayerStanding) => number> = [
   (p) => p.pointsAvg,
   (p) => p.setDiffPerMatch,
-  (p) => p.gameDiffPerMatch,
+  (p) => p.gameWinPct,
 ];
 
 /**
@@ -121,8 +122,10 @@ function resolveTieGroup(
  * - Criterio principale: MEDIA punti (punti totali / partite giocate), non il totale
  *   grezzo, perche' con 7 giocatori su un numero di turni non divisibile per 7 alcuni
  *   giocano una partita in piu' di altri.
- * - In caso di parita' sulla media, nell'ordine: differenza set/partita, differenza
- *   game/partita, scontro diretto (solo tra i giocatori ancora a pari merito).
+ * - In caso di parita' sulla media, nell'ordine: differenza set/partita, percentuale
+ *   di game vinti (game vinti / game totali giocati - non la differenza assoluta,
+ *   perche' un match 2-1 ha piu' game totali di uno 2-0), scontro diretto (solo tra
+ *   i giocatori ancora a pari merito).
  * - Se la parita' resta assoluta anche dopo lo scontro diretto: ex aequo (stesso
  *   piazzamento, es. "2=").
  * - Contano solo le partite dei turni gia' VALIDATI.
@@ -144,7 +147,7 @@ export function computeStandings(tournament: Tournament): PlayerStanding[] {
       setDiff: 0,
       gameDiff: 0,
       setDiffPerMatch: 0,
-      gameDiffPerMatch: 0,
+      gameWinPct: 0,
       rank: "",
     });
   }
@@ -202,7 +205,8 @@ export function computeStandings(tournament: Tournament): PlayerStanding[] {
     s.gameDiff = s.gamesWon - s.gamesLost;
     s.pointsAvg = s.matchesPlayed > 0 ? s.points / s.matchesPlayed : 0;
     s.setDiffPerMatch = s.matchesPlayed > 0 ? s.setDiff / s.matchesPlayed : 0;
-    s.gameDiffPerMatch = s.matchesPlayed > 0 ? s.gameDiff / s.matchesPlayed : 0;
+    const totalGames = s.gamesWon + s.gamesLost;
+    s.gameWinPct = totalGames > 0 ? s.gamesWon / totalGames : 0;
   }
 
   const allPlayers = Array.from(byNumber.values());

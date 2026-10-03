@@ -17,7 +17,7 @@ export function StandingsTable({ standings }: { standings: PlayerStanding[] }) {
             <th className="px-4 py-3 font-medium text-right">Punti</th>
             <th className="px-4 py-3 font-medium text-right">Partite</th>
             <th className="px-4 py-3 font-medium text-right">Diff. set/partita</th>
-            <th className="px-4 py-3 font-medium text-right">Diff. game/partita</th>
+            <th className="px-4 py-3 font-medium text-right">% Game vinti</th>
           </tr>
         </thead>
         <tbody>
@@ -34,7 +34,7 @@ export function StandingsTable({ standings }: { standings: PlayerStanding[] }) {
               <td className="px-4 py-3 text-right text-slate-500">{s.points}</td>
               <td className="px-4 py-3 text-right text-slate-500">{s.matchesPlayed}</td>
               <td className="px-4 py-3 text-right text-slate-500">{formatSigned(s.setDiffPerMatch, 2)}</td>
-              <td className="px-4 py-3 text-right text-slate-500">{formatSigned(s.gameDiffPerMatch, 2)}</td>
+              <td className="px-4 py-3 text-right text-slate-500">{(s.gameWinPct * 100).toFixed(1).replace(".", ",")}%</td>
             </tr>
 
           ))}
