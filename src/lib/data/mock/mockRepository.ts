@@ -33,6 +33,11 @@ export class MockRepository implements DataRepository {
     return store.users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null;
   }
 
+  async findUserById(id: string) {
+    const store = getMockStore();
+    return store.users.find((u) => u.id === id) ?? null;
+  }
+
   async listUsers(): Promise<AppUser[]> {
     const store = getMockStore();
     return store.users
@@ -85,6 +90,13 @@ export class MockRepository implements DataRepository {
       isAdmin: user.isAdmin,
       createdAt: user.createdAt,
     };
+  }
+
+  async updateUserPassword(id: string, newPasswordHash: string): Promise<void> {
+    const store = getMockStore();
+    const user = store.users.find((u) => u.id === id);
+    if (!user) throw new Error("Utente non trovato");
+    user.passwordHash = newPasswordHash;
   }
 
   async listPlayers(): Promise<Player[]> {

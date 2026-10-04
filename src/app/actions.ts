@@ -7,6 +7,52 @@ import { AuthError } from "next-auth";
 import { getRepository } from "@/lib/data";
 import { signIn, auth } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import bcrypt from "bcryptjs";
+
+export async function changePasswordAction(
+  _prevState: { error: string | null; success: boolean },
+  formData: FormData
+): Promise<{ error: string | null; success: boolean }> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Non sei autenticato", success: false };
+  }
+
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (newPassword !== confirmPassword) {
+    return { error: "La nuova password e la conferma non coincidono", success: false };
+  }
+
+  if (newPassword.length < 6) {
+    return { error: "La nuova password deve avere almeno 6 caratteri", success: false };
+  }
+
+  const repo = getRepository();
+  const user = await repo.findUserById(session.user.id);
+  if (!user) {
+    return { error: "Utente non trovato", success: false };
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isValid) {
+    return { error: "La password attuale e' errata", success: false };
+  }
+
+  const newHash = await bcrypt.hash(newPassword, 10);
+  await repo.updateUserPassword(user.id, newHash);
+
+  await logAudit({
+    action: "UPDATE",
+    entityType: "AdminUser",
+    entityId: user.id,
+    details: { operation: "changePassword" },
+  });
+
+  return { error: null, success: true };
+}
 
 export async function loginAction(
   _prevState: { error: string | null },

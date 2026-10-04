@@ -28,6 +28,9 @@ export function MobileNav({
           Utenti
         </Link>
       )}
+      <Link href="/profile" onClick={close} className="font-medium text-slate-600 hover:text-primary">
+        Profilo
+      </Link>
     </>
   );
 

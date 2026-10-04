@@ -110,6 +110,20 @@ export class PrismaRepository implements DataRepository {
     };
   }
 
+  async findUserById(id: string) {
+    const user = await prisma.adminUser.findUnique({ where: { id } });
+    if (!user) return null;
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      name: user.name,
+      passwordHash: user.passwordHash,
+      isAdmin: user.isAdmin,
+      createdAt: user.createdAt,
+    };
+  }
+
   async listUsers(): Promise<AppUser[]> {
     const users = await prisma.adminUser.findMany({ orderBy: { email: "asc" } });
     return users.map((u) => ({
@@ -150,6 +164,13 @@ export class PrismaRepository implements DataRepository {
     after(() => syncAdminUser(appUser));
     after(() => syncPlayer(player));
     return appUser;
+  }
+
+  async updateUserPassword(id: string, newPasswordHash: string): Promise<void> {
+    await prisma.adminUser.update({
+      where: { id },
+      data: { passwordHash: newPasswordHash },
+    });
   }
 
   async listPlayers(): Promise<Player[]> {

@@ -41,9 +41,11 @@ export interface CreateAuditLogInput {
  */
 export interface DataRepository {
   findUserByEmail(email: string): Promise<AuthUser | null>;
+  findUserById(id: string): Promise<AuthUser | null>;
   listUsers(): Promise<AppUser[]>;
   /** Crea un nuovo utente e, in automatico, un giocatore omonimo. */
   createUser(input: CreateUserInput): Promise<AppUser>;
+  updateUserPassword(id: string, newPasswordHash: string): Promise<void>;
 
   listPlayers(): Promise<Player[]>;
   createPlayer(input: { name: string; email?: string | null }): Promise<Player>;
