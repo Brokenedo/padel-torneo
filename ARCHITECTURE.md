@@ -198,6 +198,17 @@ erDiagram
         int team1Games
         int team2Games
     }
+
+    AUDIT_LOG {
+        string id PK
+        string userId "nullable"
+        string username
+        string action "CREATE | UPDATE | DELETE"
+        string entityType
+        string entityId "nullable"
+        jsonb details "nullable"
+        datetime createdAt
+    }
 ```
 
 Note sul modello:
@@ -253,7 +264,11 @@ verso `AdminUser`, cosi' i log sopravvivono all'eliminazione dell'utente. Un err
 di scrittura del log non fa fallire l'operazione. Nel repository mock i log restano
 in memoria. Non e' replicato su Dataverse.
 
-## 8. Deploy
+## 8. PWA e Service Worker
+- Il Service Worker (`public/sw.js`) è statico e include un `CACHE_NAME` aggiornato manualmente prima di ogni push per permettere ai client di scaricare la versione più recente (come indicato in `AGENTS.md`).
+- Il bottone di installazione (`InstallPwaButton`) appare se l'app soddisfa i requisiti di installabilità (standalone).
+
+## 9. Deploy
 
 - **Hosting**: Vercel, progetto `brokenedos-projects/padel-torneo`.
 - **Database**: Neon Postgres, provisionato tramite integrazione marketplace nativa

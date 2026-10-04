@@ -9,6 +9,16 @@ giocata una partita (2 contro 2, al meglio di 3 set) mentre 3 giocatori riposano
 convalida del risultato, il sistema genera automaticamente l'abbinamento del turno
 successivo cercando di bilanciare compagni, avversari e riposi.
 
+
+## Funzionalità Principali
+
+- **Gestione Tornei e Turni**: Creazione tornei, inserimento risultati, avanzamento turni e classifica (3 modalità di punteggio).
+- **Algoritmo di Pairing**: Generazione calendario intelligente (`src/lib/pairing.ts`) per evitare doppioni di compagni, avversari e turni di riposo.
+- **Autenticazione e Area Riservata**: Accesso admin per gestire i dati e area riservata per modificare la propria password.
+- **Audit Log**: Tracciamento di ogni operazione di creazione/modifica/eliminazione nel database.
+- **Supporto PWA**: L'app può essere installata su smartphone e desktop. Il Service Worker aggiorna la cache dei file statici ad ogni nuovo rilascio.
+- **Sincronizzazione Dataverse (Opzionale)**: Sincronizzazione "best-effort" degli eventi su un sistema Microsoft Dataverse esterno.
+
 ## Stack
 
 - **Next.js 16** (App Router, TypeScript, Tailwind CSS v4)
