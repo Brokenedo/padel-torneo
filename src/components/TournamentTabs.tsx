@@ -16,7 +16,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "classifica", label: "Classifica" },
   { id: "giocatori", label: "Giocatori" },
   { id: "dashboard", label: "Dashboard" },
-//  { id: "statistiche", label: "Statistiche" },
+  { id: "statistiche", label: "Statistiche" },
 ];
 
 export function TournamentTabs({
@@ -24,18 +24,22 @@ export function TournamentTabs({
   standings,
   stats,
   numberToName,
+  isAdmin = false,
 }: {
   tournament: Tournament;
   standings: PlayerStanding[];
   stats: TournamentStats;
   numberToName: Map<number, string>;
+  isAdmin?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("partite");
+
+  const availableTabs = TABS.filter((t) => t.id !== "statistiche" || isAdmin);
 
   return (
     <div className="space-y-6">
       <div className="flex overflow-x-auto max-w-full bg-white rounded-xl shadow-sm p-1 gap-1">
-        {TABS.map((tab) => (
+        {availableTabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
@@ -92,6 +96,7 @@ export function TournamentTabs({
           players={tournament.players.map((p) => p.number)}
           stats={stats}
           numberToName={numberToName}
+          rounds={tournament.rounds}
         />
       )}
     </div>

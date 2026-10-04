@@ -9,7 +9,7 @@ const SCORING_LABELS: Record<Tournament["scoringMode"], string> = {
   SETS_WON: "Punti = set vinti",
 };
 
-export function TournamentOverview({ tournament }: { tournament: Tournament }) {
+export function TournamentOverview({ tournament, isAdmin = false }: { tournament: Tournament; isAdmin?: boolean }) {
   const numberToName = new Map(tournament.players.map((p) => [p.number, p.player.name]));
   const stats = computeStats(
     tournament.players.map((p) => p.number),
@@ -32,6 +32,7 @@ export function TournamentOverview({ tournament }: { tournament: Tournament }) {
         standings={standings}
         stats={stats}
         numberToName={numberToName}
+        isAdmin={isAdmin}
       />
     </div>
   );
