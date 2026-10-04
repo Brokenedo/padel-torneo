@@ -244,6 +244,15 @@ Classifica individuale: ogni giocatore eredita i punti della squadra con cui ha
 giocato quel turno. Parità risolta in cascata con: differenza set → differenza game →
 scontro diretto (aggregato su tutti gli incontri tra i due giocatori).
 
+### 7.4 Log delle operazioni (`AuditLog`, `src/lib/audit.ts`)
+Ogni operazione CRUD eseguita dalle server action viene registrata nella tabella
+`AuditLog` tramite `logAudit()` (che passa da `DataRepository.createAuditLog`):
+data (`createdAt`), utente (`userId`, `username` denormalizzato), tipo operazione
+(`CREATE | UPDATE | DELETE`), `entityType`, `entityId` e `details` (JSON). Nessuna FK
+verso `AdminUser`, cosi' i log sopravvivono all'eliminazione dell'utente. Un errore
+di scrittura del log non fa fallire l'operazione. Nel repository mock i log restano
+in memoria. Non e' replicato su Dataverse.
+
 ## 8. Deploy
 
 - **Hosting**: Vercel, progetto `brokenedos-projects/padel-torneo`.

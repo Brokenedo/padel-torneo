@@ -11,6 +11,18 @@ interface MockStore {
   users: AuthUser[];
   players: Player[];
   tournaments: Tournament[];
+  auditLogs: MockAuditLog[];
+}
+
+interface MockAuditLog {
+  id: string;
+  createdAt: Date;
+  userId: string | null;
+  username: string;
+  action: "CREATE" | "UPDATE" | "DELETE";
+  entityType: string;
+  entityId: string | null;
+  details: Record<string, unknown> | null;
 }
 
 const globalForMock = globalThis as unknown as { __mockStore?: MockStore };
@@ -93,12 +105,14 @@ function seed(): MockStore {
     },
   ];
 
-  return { users, players, tournaments };
+  return { users, players, tournaments, auditLogs: [] };
 }
 
 export function getMockStore(): MockStore {
   if (!globalForMock.__mockStore) {
     globalForMock.__mockStore = seed();
   }
+  // store creato prima dell'introduzione dei log (hot-reload in dev)
+  globalForMock.__mockStore.auditLogs ??= [];
   return globalForMock.__mockStore;
 }

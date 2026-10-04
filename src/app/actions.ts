@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { getRepository } from "@/lib/data";
 import { signIn, auth } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function loginAction(
   _prevState: { error: string | null },
@@ -36,9 +37,15 @@ export async function createPlayerAction(formData: FormData) {
     name: formData.get("name"),
     email: formData.get("email") ?? "",
   });
-  await getRepository().createPlayer({
+  const player = await getRepository().createPlayer({
     name: parsed.name,
     email: parsed.email ? parsed.email : null,
+  });
+  await logAudit({
+    action: "CREATE",
+    entityType: "Player",
+    entityId: player.id,
+    details: { name: player.name, email: player.email },
   });
   revalidatePath("/players");
 }
@@ -70,7 +77,13 @@ export async function createUserAction(
   }
 
   try {
-    await getRepository().createUser(parsed.data);
+    const created = await getRepository().createUser(parsed.data);
+    await logAudit({
+      action: "CREATE",
+      entityType: "AdminUser",
+      entityId: created.id,
+      details: { username: created.username, email: created.email, isAdmin: created.isAdmin },
+    });
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Errore durante la creazione dell'utente" };
   }
@@ -116,6 +129,12 @@ export async function createTournamentAction(formData: FormData) {
     createdById: session.user.id,
   });
 
+  await logAudit({
+    action: "CREATE",
+    entityType: "Tournament",
+    entityId: tournament.id,
+    details: { name: tournament.name, scoringMode: tournament.scoringMode, playerCount: parsed.playerIds.length },
+  });
   revalidatePath("/");
   redirect(`/tournaments/${tournament.id}`);
 }
@@ -127,7 +146,14 @@ export async function deleteTournamentAction(formData: FormData) {
   }
 
   const tournamentId = String(formData.get("tournamentId"));
+  const tournament = await getRepository().getTournamentById(tournamentId);
   await getRepository().deleteTournament(tournamentId, session.user.id);
+  await logAudit({
+    action: "DELETE",
+    entityType: "Tournament",
+    entityId: tournamentId,
+    details: { name: tournament?.name ?? null },
+  });
   revalidatePath("/");
 }
 
@@ -155,12 +181,29 @@ export async function submitResultAction(formData: FormData) {
 
   const parsed = submitResultSchema.parse({ roundId, sets });
   const round = await getRepository().submitMatchResult(parsed);
+  await logAudit({
+    action: "UPDATE",
+    entityType: "Match",
+    entityId: round.match?.id ?? null,
+    details: {
+      operation: "submitResult",
+      tournamentId: round.tournamentId,
+      roundNumber: round.roundNumber,
+      sets: parsed.sets,
+    },
+  });
   revalidatePath(`/tournaments/${round.tournamentId}`);
 }
 
 export async function validateRoundAction(formData: FormData) {
   const roundId = String(formData.get("roundId"));
   const { round } = await getRepository().validateRound(roundId);
+  await logAudit({
+    action: "UPDATE",
+    entityType: "Round",
+    entityId: round.id,
+    details: { operation: "validate", tournamentId: round.tournamentId, roundNumber: round.roundNumber },
+  });
   revalidatePath(`/tournaments/${round.tournamentId}`);
   redirect(`/tournaments/${round.tournamentId}`);
 }

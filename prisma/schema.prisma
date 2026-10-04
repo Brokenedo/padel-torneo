@@ -129,3 +129,25 @@ model MatchSet {
 
   @@unique([matchId, setNumber])
 }
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+// Registro delle operazioni CRUD eseguite dagli utenti. Nessuna relazione verso
+// AdminUser: i log devono restare anche se l'utente viene eliminato.
+model AuditLog {
+  id         String      @id @default(cuid())
+  createdAt  DateTime    @default(now())
+  userId     String?
+  username   String
+  action     AuditAction
+  entityType String // es. "Tournament", "Player", "AdminUser", "Round"
+  entityId   String?
+  details    Json?
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}

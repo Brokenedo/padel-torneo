@@ -22,6 +22,17 @@ export interface SubmitResultInput {
   sets: Array<{ team1Games: number; team2Games: number }>;
 }
 
+export type AuditAction = "CREATE" | "UPDATE" | "DELETE";
+
+export interface CreateAuditLogInput {
+  userId: string | null;
+  username: string;
+  action: AuditAction;
+  entityType: string;
+  entityId?: string | null;
+  details?: Record<string, unknown> | null;
+}
+
 /**
  * Contratto comune implementato sia dal repository mock (in-memory, per lo sviluppo
  * locale senza database reale) sia dal repository Prisma (Postgres reale, produzione).
@@ -48,4 +59,7 @@ export interface DataRepository {
   submitMatchResult(input: SubmitResultInput): Promise<Round>;
   /** Convalida il turno e, se non e' l'ultimo, ricalcola e genera il turno successivo. */
   validateRound(roundId: string): Promise<{ round: Round; nextRound: Round | null }>;
+
+  /** Registra un'operazione CRUD nel log di audit. */
+  createAuditLog(input: CreateAuditLogInput): Promise<void>;
 }

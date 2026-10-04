@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { addDays } from "date-fns";
-import { DataRepository, CreateTournamentInput, CreateUserInput, SubmitResultInput } from "../repository";
+import { DataRepository, CreateTournamentInput, CreateUserInput, SubmitResultInput, CreateAuditLogInput } from "../repository";
 import { Player, Tournament, Round, AppUser } from "../../types";
 import { getMockStore } from "./mockStore";
 import { generateFullSchedule } from "../../pairing";
@@ -266,5 +266,18 @@ export class MockRepository implements DataRepository {
       };
     }
     throw new Error("Turno non trovato");
+  }
+
+  async createAuditLog(input: CreateAuditLogInput): Promise<void> {
+    getMockStore().auditLogs.push({
+      id: `mock-audit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      createdAt: new Date(),
+      userId: input.userId,
+      username: input.username,
+      action: input.action,
+      entityType: input.entityType,
+      entityId: input.entityId ?? null,
+      details: input.details ?? null,
+    });
   }
 }

@@ -2,7 +2,8 @@ import { addDays } from "date-fns";
 import bcrypt from "bcryptjs";
 import { after } from "next/server";
 import { prisma } from "../../prisma";
-import { DataRepository, CreateTournamentInput, CreateUserInput, SubmitResultInput } from "../repository";
+import { DataRepository, CreateTournamentInput, CreateUserInput, SubmitResultInput, CreateAuditLogInput } from "../repository";
+import type { Prisma } from "@prisma/client";
 import { Player, Tournament, Round, Match, SetScore, AppUser } from "../../types";
 import { generateFullSchedule } from "../../pairing";
 import { computeWinnerTeam } from "../../matchLogic";
@@ -332,5 +333,18 @@ export class PrismaRepository implements DataRepository {
       })
     );
     return { round: validatedRound!, nextRound };
+  }
+
+  async createAuditLog(input: CreateAuditLogInput): Promise<void> {
+    await prisma.auditLog.create({
+      data: {
+        userId: input.userId,
+        username: input.username,
+        action: input.action,
+        entityType: input.entityType,
+        entityId: input.entityId ?? null,
+        details: (input.details ?? undefined) as Prisma.InputJsonValue | undefined,
+      },
+    });
   }
 }
