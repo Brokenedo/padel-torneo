@@ -87,6 +87,7 @@ src/
 │   ├── login/                    # pagina di accesso
 │   ├── players/                  # gestione anagrafica giocatori
 │   ├── users/                    # gestione utenti (solo admin)
+│   ├── profile/                  # area riservata: cambio password, eliminazione account
 │   ├── tournaments/
 │   │   ├── new/                  # creazione torneo (form + loader)
 │   │   └── [id]/                 # dettaglio torneo (tab: Partite/Classifica/...)
@@ -100,6 +101,8 @@ src/
 │   ├── standings.ts               # calcolo classifica
 │   ├── matchLogic.ts              # punteggio match / vincitore
 │   ├── stats.ts                   # matrici compagni/avversari
+│   ├── audit.ts                   # helper logAudit (log operazioni CRUD)
+│   ├── dataverse/                 # sincronizzazione best-effort verso Dataverse
 │   ├── types.ts                   # tipi di dominio condivisi (mock + prisma)
 │   └── data/
 │       ├── repository.ts          # interfaccia DataRepository
@@ -122,10 +125,22 @@ prisma/
   (eccetto `/login` e `/api/auth/*`).
 - **Autorizzazioni granulari** (controllate sia in UI sia server-side, mai solo
   nascondendo un bottone):
-  - Creazione torneo, creazione utenti → solo `role === "ADMIN"`.
+  - Creazione torneo, creazione utenti, eliminazione giocatori → solo `role === "ADMIN"`.
+  - Tab "Statistiche" del torneo → visibile solo agli admin (`isAdmin` calcolato server-side in
+    `tournaments/[id]/page.tsx` e passato a `TournamentTabs`).
   - Eliminazione torneo → solo l'admin che l'ha creato (`tournament.createdById === session.user.id`).
   - Inserimento/convalida risultato di un turno → solo se è il turno attivo
     (`round.roundNumber === tournament.currentRoundNumber`).
+- **Area riservata (`/profile`)**: ogni utente autenticato puo':
+  - cambiare la propria password (`changePasswordAction`): richiede la password attuale,
+    nuova password di almeno 6 caratteri e conferma coincidente;
+  - eliminare il proprio account (`deleteOwnAccountAction`): richiede la password. Elimina
+    anche il giocatore collegato (stessa email). L'operazione e' **bloccata per intero**
+    (nessun dato eliminato, popup di alert in UI) se il giocatore partecipa a un torneo
+    `ACTIVE`, oppure se l'utente e' l'ultimo amministratore. Se il giocatore ha partecipato
+    solo a tornei conclusi viene mantenuto (storico risultati) e viene eliminato solo l'account.
+    Dopo l'eliminazione l'utente viene disconnesso e riportato a `/login`.
+  Entrambe le azioni sono registrate nell'`AuditLog`.
 
 ## 6. Modello dati — Diagramma ER
 
@@ -172,6 +187,7 @@ erDiagram
         string tournamentId FK
         string playerId FK
         int number "1-7, assegnato a sorteggio"
+        boolean avoidsExtraMatches "default false"
     }
 
     ROUND {
@@ -222,6 +238,10 @@ Note sul modello:
 - Vincoli di unicità: `(tournamentId, roundNumber)`, `(tournamentId, number)`,
   `(tournamentId, playerId)`, `(matchId, setNumber)`.
 
+- `Player` non ha cascade verso `TournamentPlayer`: un giocatore con partecipazioni a tornei
+  non puo' essere eliminato (vale per `deletePlayer` e, per lo storico, per l'eliminazione account).
+- `AuditLog` non ha FK verso `AdminUser` (log persistenti anche dopo l'eliminazione dell'utente).
+
 ## 7. Logica di dominio chiave
 
 ### 7.1 Algoritmo di abbinamento (`src/lib/pairing.ts`)
@@ -262,13 +282,27 @@ data (`createdAt`), utente (`userId`, `username` denormalizzato), tipo operazion
 (`CREATE | UPDATE | DELETE`), `entityType`, `entityId` e `details` (JSON). Nessuna FK
 verso `AdminUser`, cosi' i log sopravvivono all'eliminazione dell'utente. Un errore
 di scrittura del log non fa fallire l'operazione. Nel repository mock i log restano
-in memoria. Non e' replicato su Dataverse.
+in memoria. Non e' replicato su Dataverse. Operazioni loggate: creazione/eliminazione giocatore, creazione
+utente, creazione/eliminazione torneo, inserimento risultato, convalida turno, cambio password,
+eliminazione account.
+
+### 7.5 Statistiche del torneo (tab "Statistiche", solo admin)
+- Matrici compagni/avversari calcolate sui turni gia' validati (`computeStats`), con i **nomi**
+  dei giocatori in intestazione.
+- Matrice "Scontri previsti (intero torneo)" calcolata sull'intero calendario: celle verdi se i
+  due giocatori si sfidano almeno una volta, rosse se mai. Un banner conferma quando tutti i
+  giocatori si sfidano almeno una volta.
 
 ## 8. PWA e Service Worker
 - Il Service Worker (`public/sw.js`) è statico e include un `CACHE_NAME` aggiornato manualmente prima di ogni push per permettere ai client di scaricare la versione più recente (come indicato in `AGENTS.md`).
 - Il bottone di installazione (`InstallPwaButton`) appare se l'app soddisfa i requisiti di installabilità (standalone).
 
-## 9. Deploy
+## 9. Sincronizzazione Dataverse (opzionale)
+`src/lib/dataverse/sync.ts` replica in modalita' best-effort (mai bloccante per Postgres)
+creazione/eliminazione di giocatori, utenti, tornei e risultati. L'eliminazione dell'account
+propaga a Dataverse sia l'utente (`syncAdminUserDeleted`) sia il giocatore (`syncPlayerDeleted`).
+
+## 10. Deploy
 
 - **Hosting**: Vercel, progetto `brokenedos-projects/padel-torneo`.
 - **Database**: Neon Postgres, provisionato tramite integrazione marketplace nativa
