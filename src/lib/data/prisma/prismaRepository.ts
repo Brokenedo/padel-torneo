@@ -12,6 +12,7 @@ import {
   syncAdminUser,
   syncTournamentCreated,
   syncTournamentDeleted,
+  syncPlayerDeleted,
   syncMatchResult,
   syncRoundValidated,
 } from "../../dataverse/sync";
@@ -161,6 +162,19 @@ export class PrismaRepository implements DataRepository {
     const mapped = mapPlayer(player);
     after(() => syncPlayer(mapped));
     return mapped;
+  }
+
+  async deletePlayer(id: string): Promise<void> {
+    const player = await prisma.player.findUnique({
+      where: { id },
+      include: { _count: { select: { tournamentPlayers: true } } },
+    });
+    if (!player) throw new Error("Giocatore non trovato");
+    if (player._count.tournamentPlayers > 0) {
+      throw new Error("Il giocatore partecipa a uno o piu' tornei e non puo' essere eliminato");
+    }
+    await prisma.player.delete({ where: { id } });
+    after(() => syncPlayerDeleted(id));
   }
 
   async listTournaments(): Promise<Tournament[]> {

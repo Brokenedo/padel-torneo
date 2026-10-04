@@ -50,6 +50,29 @@ export async function createPlayerAction(formData: FormData) {
   revalidatePath("/players");
 }
 
+export async function deletePlayerAction(playerId: string): Promise<{ error: string | null }> {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") {
+    return { error: "Solo un amministratore puo' eliminare un giocatore" };
+  }
+
+  const repo = getRepository();
+  const player = (await repo.listPlayers()).find((p) => p.id === playerId);
+  try {
+    await repo.deletePlayer(playerId);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Errore durante l'eliminazione del giocatore" };
+  }
+  await logAudit({
+    action: "DELETE",
+    entityType: "Player",
+    entityId: playerId,
+    details: { name: player?.name ?? null, email: player?.email ?? null },
+  });
+  revalidatePath("/players");
+  return { error: null };
+}
+
 const createUserSchema = z.object({
   username: z.string().trim().min(2, "Lo username deve avere almeno 2 caratteri"),
   email: z.string().trim().email("Email non valida"),

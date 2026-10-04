@@ -47,6 +47,8 @@ export interface DataRepository {
 
   listPlayers(): Promise<Player[]>;
   createPlayer(input: { name: string; email?: string | null }): Promise<Player>;
+  /** Elimina il giocatore: lancia un errore se non esiste o partecipa ad almeno un torneo. */
+  deletePlayer(id: string): Promise<void>;
 
   listTournaments(): Promise<Tournament[]>;
   getActiveTournament(): Promise<Tournament | null>;

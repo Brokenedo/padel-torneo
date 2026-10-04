@@ -64,6 +64,10 @@ export async function syncTournamentDeleted(tournamentId: string) {
   await safeSync(`delete tournament ${tournamentId}`, () => deleteBySourceId("edo_tournament", tournamentId));
 }
 
+export async function syncPlayerDeleted(playerId: string) {
+  await safeSync(`delete player ${playerId}`, () => deleteBySourceId("edo_player", playerId));
+}
+
 /** Sincronizzazione completa alla creazione del torneo: torneo, giocatori, turni e match. */
 export async function syncTournamentCreated(tournament: Tournament) {
   if (!isDataverseEnabled()) return;

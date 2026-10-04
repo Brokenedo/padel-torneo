@@ -104,6 +104,16 @@ export class MockRepository implements DataRepository {
     return revivePlayerDates(clone(player));
   }
 
+  async deletePlayer(id: string): Promise<void> {
+    const store = getMockStore();
+    const idx = store.players.findIndex((p) => p.id === id);
+    if (idx === -1) throw new Error("Giocatore non trovato");
+    if (store.tournaments.some((t) => t.players.some((tp) => tp.playerId === id))) {
+      throw new Error("Il giocatore partecipa a uno o piu' tornei e non puo' essere eliminato");
+    }
+    store.players.splice(idx, 1);
+  }
+
   async listTournaments(): Promise<Tournament[]> {
     const store = getMockStore();
     return store.tournaments

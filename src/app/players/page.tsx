@@ -1,8 +1,12 @@
 import { getRepository } from "@/lib/data";
+import { auth } from "@/lib/auth";
 import { createPlayerAction } from "@/app/actions";
+import { DeletePlayerButton } from "@/components/DeletePlayerButton";
 
 export default async function PlayersPage() {
   const players = await getRepository().listPlayers();
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN";
 
   return (
     <div className="space-y-6">
@@ -41,9 +45,12 @@ export default async function PlayersPage() {
 
       <div className="bg-white rounded-2xl shadow-sm divide-y divide-slate-100 overflow-hidden">
         {players.map((p) => (
-          <div key={p.id} className="px-5 py-3 text-sm flex items-center justify-between">
+          <div key={p.id} className="px-5 py-3 text-sm flex items-center justify-between gap-3">
             <span className="font-medium text-slate-900">{p.name}</span>
-            <span className="text-slate-400">{p.email ?? ""}</span>
+            <span className="flex items-center gap-2">
+              <span className="text-slate-400">{p.email ?? ""}</span>
+              {isAdmin && <DeletePlayerButton playerId={p.id} playerName={p.name} />}
+            </span>
           </div>
         ))}
         {players.length === 0 && (
