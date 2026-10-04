@@ -99,6 +99,32 @@ export class MockRepository implements DataRepository {
     user.passwordHash = newPasswordHash;
   }
 
+  async deleteUserAccount(id: string): Promise<{ playerId: string | null; playerDeleted: boolean }> {
+    const store = getMockStore();
+    const userIdx = store.users.findIndex((u) => u.id === id);
+    if (userIdx === -1) throw new Error("Utente non trovato");
+    const user = store.users[userIdx];
+
+    if (user.isAdmin && !store.users.some((u) => u.isAdmin && u.id !== id)) {
+      throw new Error("Sei l'ultimo amministratore: non puoi eliminare il tuo account");
+    }
+
+    const player = store.players.find((p) => p.email?.toLowerCase() === user.email.toLowerCase());
+    const memberships = player
+      ? store.tournaments.filter((t) => t.players.some((tp) => tp.playerId === player.id))
+      : [];
+    if (memberships.some((t) => t.status === "ACTIVE")) {
+      throw new Error("Stai partecipando a un torneo in corso: non puoi eliminare il tuo account");
+    }
+
+    const playerDeleted = !!player && memberships.length === 0;
+    if (playerDeleted) {
+      store.players.splice(store.players.findIndex((p) => p.id === player!.id), 1);
+    }
+    store.users.splice(userIdx, 1);
+    return { playerId: player?.id ?? null, playerDeleted };
+  }
+
   async listPlayers(): Promise<Player[]> {
     const store = getMockStore();
     return clone(store.players).map(revivePlayerDates);

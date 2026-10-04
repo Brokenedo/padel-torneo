@@ -10,6 +10,7 @@ import { computeWinnerTeam } from "../../matchLogic";
 import {
   syncPlayer,
   syncAdminUser,
+  syncAdminUserDeleted,
   syncTournamentCreated,
   syncTournamentDeleted,
   syncPlayerDeleted,
@@ -171,6 +172,39 @@ export class PrismaRepository implements DataRepository {
       where: { id },
       data: { passwordHash: newPasswordHash },
     });
+  }
+
+  async deleteUserAccount(id: string): Promise<{ playerId: string | null; playerDeleted: boolean }> {
+    const user = await prisma.adminUser.findUnique({ where: { id } });
+    if (!user) throw new Error("Utente non trovato");
+
+    if (user.isAdmin) {
+      const otherAdmins = await prisma.adminUser.count({ where: { isAdmin: true, id: { not: id } } });
+      if (otherAdmins === 0) {
+        throw new Error("Sei l'ultimo amministratore: non puoi eliminare il tuo account");
+      }
+    }
+
+    const player = await prisma.player.findFirst({
+      where: { email: { equals: user.email, mode: "insensitive" } },
+      include: { tournamentPlayers: { select: { tournament: { select: { status: true } } } } },
+    });
+
+    if (player?.tournamentPlayers.some((tp) => tp.tournament.status === "ACTIVE")) {
+      throw new Error("Stai partecipando a un torneo in corso: non puoi eliminare il tuo account");
+    }
+
+    const playerToDelete = player && player.tournamentPlayers.length === 0 ? player : null;
+    await prisma.$transaction([
+      ...(playerToDelete ? [prisma.player.delete({ where: { id: playerToDelete.id } })] : []),
+      prisma.adminUser.delete({ where: { id } }),
+    ]);
+
+    after(async () => {
+      if (playerToDelete) await syncPlayerDeleted(playerToDelete.id);
+      await syncAdminUserDeleted(id);
+    });
+    return { playerId: player?.id ?? null, playerDeleted: !!playerToDelete };
   }
 
   async listPlayers(): Promise<Player[]> {

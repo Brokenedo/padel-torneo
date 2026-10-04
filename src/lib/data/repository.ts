@@ -46,6 +46,13 @@ export interface DataRepository {
   /** Crea un nuovo utente e, in automatico, un giocatore omonimo. */
   createUser(input: CreateUserInput): Promise<AppUser>;
   updateUserPassword(id: string, newPasswordHash: string): Promise<void>;
+  /**
+   * Elimina l'account e il giocatore collegato (stessa email). Lancia un errore, senza
+   * eliminare nulla, se il giocatore partecipa a un torneo in corso o se l'utente e'
+   * l'ultimo amministratore. Se il giocatore ha partecipato solo a tornei conclusi viene
+   * mantenuto (storico), perche' i risultati passati lo referenziano.
+   */
+  deleteUserAccount(id: string): Promise<{ playerId: string | null; playerDeleted: boolean }>;
 
   listPlayers(): Promise<Player[]>;
   createPlayer(input: { name: string; email?: string | null }): Promise<Player>;

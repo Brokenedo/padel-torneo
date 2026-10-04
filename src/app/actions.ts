@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { getRepository } from "@/lib/data";
-import { signIn, auth } from "@/lib/auth";
+import { signIn, signOut, auth } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 
@@ -52,6 +52,42 @@ export async function changePasswordAction(
   });
 
   return { error: null, success: true };
+}
+
+export async function deleteOwnAccountAction(
+  currentPassword: string
+): Promise<{ error: string | null }> {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Non sei autenticato" };
+
+  const repo = getRepository();
+  const user = await repo.findUserById(session.user.id);
+  if (!user) return { error: "Utente non trovato" };
+
+  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isValid) return { error: "La password e' errata" };
+
+  let result;
+  try {
+    result = await repo.deleteUserAccount(user.id);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Errore durante l'eliminazione dell'account" };
+  }
+
+  await logAudit({
+    action: "DELETE",
+    entityType: "AdminUser",
+    entityId: user.id,
+    details: {
+      operation: "deleteOwnAccount",
+      email: user.email,
+      playerId: result.playerId,
+      playerDeleted: result.playerDeleted,
+    },
+  });
+
+  await signOut({ redirectTo: "/login" });
+  return { error: null };
 }
 
 export async function loginAction(

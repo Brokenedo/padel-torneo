@@ -60,6 +60,10 @@ export async function syncAdminUser(user: AppUser) {
   );
 }
 
+export async function syncAdminUserDeleted(userId: string) {
+  await safeSync(`delete adminuser ${userId}`, () => deleteBySourceId("edo_adminuser", userId));
+}
+
 export async function syncTournamentDeleted(tournamentId: string) {
   await safeSync(`delete tournament ${tournamentId}`, () => deleteBySourceId("edo_tournament", tournamentId));
 }

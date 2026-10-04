@@ -1,7 +1,7 @@
 // Service worker minimale: necessario per i criteri di installabilita' PWA.
 // Intenzionalmente NON mette in cache pagine HTML/dati dinamici (tornei, auth, server
 // actions): mette in cache solo asset statici immutabili (_next/static, icone).
-const CACHE_NAME = "padel-torneo-static-v8";
+const CACHE_NAME = "padel-torneo-static-v9";
 const STATIC_PATTERNS = [/^\/_next\/static\//, /^\/pwa-icon-/, /^\/icon$/, /^\/apple-icon$/];
 
 self.addEventListener("install", () => {

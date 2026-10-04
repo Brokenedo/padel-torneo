@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ChangePasswordForm } from "./ChangePasswordForm";
+import { DeleteAccountSection } from "./DeleteAccountSection";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -16,6 +17,7 @@ export default async function ProfilePage() {
       </p>
       
       <ChangePasswordForm />
+      <DeleteAccountSection />
     </div>
   );
 }
