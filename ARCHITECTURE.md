@@ -11,7 +11,7 @@ turno al meglio di 3 set, 3 giocatori a riposo). L'app calcola automaticamente g
 abbinamenti di ogni turno, gestisce la classifica individuale con 3 modalità di
 punteggio configurabili, e offre un'area di amministrazione per giocatori, tornei e
 utenti.
-
+--test
 ## 2. Stack tecnologico
 
 | Livello | Tecnologia |
