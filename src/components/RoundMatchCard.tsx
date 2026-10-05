@@ -6,7 +6,7 @@ import { submitResultAction, validateRoundAction, updateMatchCourtAction } from 
 
 const SET_NUMBERS = [1, 2, 3];
 
-function StatusBadge({ round, isActive }: { round: Round; isActive: boolean }) {
+function StatusBadge({ round }: { round: Round }) {
   if (round.status === "VALIDATED") {
     return (
       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-primary/10 text-primary">
@@ -44,6 +44,7 @@ export function RoundMatchCard({
   const [selectedCourtId, setSelectedCourtId] = useState(round.match?.courtId ?? "");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedCourtId(round.match?.courtId ?? "");
   }, [round.match?.courtId]);
 
@@ -61,7 +62,7 @@ export function RoundMatchCard({
     <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-slate-900">Turno {round.roundNumber}</h3>
-        <StatusBadge round={round} isActive={isActive} />
+        <StatusBadge round={round} />
       </div>
 
       {!round.match ? (
