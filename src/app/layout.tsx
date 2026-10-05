@@ -30,19 +30,12 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  const appEnv = process.env.NEXT_PUBLIC_APP_ENV;
-
   return (
     <html
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-slate-900">
-        {appEnv && (
-          <div className="bg-amber-500 text-amber-950 px-4 py-1.5 text-center text-xs font-bold uppercase tracking-widest sticky top-0 z-50 shadow-sm">
-            Ambiente: {appEnv}
-          </div>
-        )}
         <ServiceWorkerRegister />
         <InstallPwaButton />
         <Header />
