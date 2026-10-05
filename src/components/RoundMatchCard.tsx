@@ -1,5 +1,8 @@
-import { Round } from "@/lib/types";
-import { submitResultAction, validateRoundAction } from "@/app/actions";
+"use client";
+
+import { useTransition } from "react";
+import { Round, Court } from "@/lib/types";
+import { submitResultAction, validateRoundAction, updateMatchCourtAction } from "@/app/actions";
 
 const SET_NUMBERS = [1, 2, 3];
 
@@ -11,13 +14,6 @@ function StatusBadge({ round, isActive }: { round: Round; isActive: boolean }) {
       </span>
     );
   }
- /* if (!isActive) {
-    return (
-      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-400">
-        in attesa
-      </span>
-    );
-  }*/
   if (round.match && round.match.winnerTeam !== null) {
     return (
       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-100 text-amber-700">
@@ -36,13 +32,23 @@ export function RoundMatchCard({
   round,
   numberToName,
   isActive,
+  courts = [],
 }: {
   round: Round;
   numberToName: Map<number, string>;
   isActive: boolean;
+  courts?: Court[];
 }) {
   const name = (n: number) => numberToName.get(n) ?? `#${n}`;
-  const isLocked = !isActive && round.status !== "VALIDATED";
+  const [isPending, startTransition] = useTransition();
+
+  function handleCourtChange(courtId: string) {
+    if (!round.match) return;
+    startTransition(async () => {
+      const res = await updateMatchCourtAction(round.match!.id, courtId || null);
+      if (res.error) alert(res.error);
+    });
+  }
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
@@ -56,82 +62,99 @@ export function RoundMatchCard({
           Il turno verrà generato automaticamente dopo la convalida del turno precedente.
         </p>
       ) : (
-        <form action={submitResultAction} className="space-y-2">
-          <input type="hidden" name="roundId" value={round.id} />
-
-          <div className="grid grid-cols-[1fr_repeat(3,56px)] gap-x-3 items-center">
-            <span />
-            {SET_NUMBERS.map((n) => (
-              <span key={n} className="text-xs text-slate-400 text-center">
-                Set {n}
-              </span>
-            ))}
-
-            <span className="font-semibold text-slate-900 py-2">
-              {name(round.match.team1Numbers[0])} + {name(round.match.team1Numbers[1])}
-            </span>
-            {SET_NUMBERS.map((n) => {
-              const existing = round.match!.sets.find((s) => s.setNumber === n);
-              return (
-                <input
-                  key={n}
-                  type="number"
-                  min={0}
-                  max={7}
-                  name={`set${n}team1`}
-                  defaultValue={existing?.team1Games ?? ""}
-                  disabled={ round.status === "VALIDATED"}
-                  className="w-14 h-10 text-center border border-slate-200 rounded-lg disabled:bg-slate-50 disabled:text-slate-400"
-                />
-              );
-            })}
-
-            <div className="col-span-4 border-t border-slate-100" />
-
-            <span className="font-semibold text-slate-900 py-2">
-              {name(round.match.team2Numbers[0])} + {name(round.match.team2Numbers[1])}
-            </span>
-            {SET_NUMBERS.map((n) => {
-              const existing = round.match!.sets.find((s) => s.setNumber === n);
-              return (
-                <input
-                  key={n}
-                  type="number"
-                  min={0}
-                  max={7}
-                  name={`set${n}team2`}
-                  defaultValue={existing?.team2Games ?? ""}
-                  disabled={ round.status === "VALIDATED"}
-                  className="w-14 h-10 text-center border border-slate-200 rounded-lg disabled:bg-slate-50 disabled:text-slate-400"
-                />
-              );
-            })}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
+            <span className="text-sm font-medium text-slate-700">Campo:</span>
+            <select
+              disabled={round.status === "VALIDATED" || isPending}
+              value={round.match.courtId ?? ""}
+              onChange={(e) => handleCourtChange(e.target.value)}
+              className="text-sm border border-slate-200 rounded-lg px-2 py-1 bg-white focus:ring-primary focus:border-primary disabled:opacity-50"
+            >
+              <option value="">Nessun campo</option>
+              {courts.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
 
-          <p className="text-xs text-slate-400">
-            Riposano: {round.restingNumbers.map(name).join(", ")}
-          </p>
+          <form action={submitResultAction} className="space-y-2">
+            <input type="hidden" name="roundId" value={round.id} />
 
-          { round.status !== "VALIDATED" && (
-            <div className="flex items-center gap-3 pt-1">
-              <button
-                type="submit"
-                className="bg-slate-900 hover:bg-slate-800 text-white rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer"
-              >
-                Salva risultato
-              </button>
-              {round.match.winnerTeam !== null && (
+            <div className="grid grid-cols-[1fr_repeat(3,56px)] gap-x-3 items-center">
+              <span />
+              {SET_NUMBERS.map((n) => (
+                <span key={n} className="text-xs text-slate-400 text-center">
+                  Set {n}
+                </span>
+              ))}
+
+              <span className="font-semibold text-slate-900 py-2">
+                {name(round.match.team1Numbers[0])} + {name(round.match.team1Numbers[1])}
+              </span>
+              {SET_NUMBERS.map((n) => {
+                const existing = round.match!.sets.find((s) => s.setNumber === n);
+                return (
+                  <input
+                    key={n}
+                    type="number"
+                    min={0}
+                    max={7}
+                    name={`set${n}team1`}
+                    defaultValue={existing?.team1Games ?? ""}
+                    disabled={round.status === "VALIDATED"}
+                    className="w-14 h-10 text-center border border-slate-200 rounded-lg disabled:bg-slate-50 disabled:text-slate-400"
+                  />
+                );
+              })}
+
+              <div className="col-span-4 border-t border-slate-100" />
+
+              <span className="font-semibold text-slate-900 py-2">
+                {name(round.match.team2Numbers[0])} + {name(round.match.team2Numbers[1])}
+              </span>
+              {SET_NUMBERS.map((n) => {
+                const existing = round.match!.sets.find((s) => s.setNumber === n);
+                return (
+                  <input
+                    key={n}
+                    type="number"
+                    min={0}
+                    max={7}
+                    name={`set${n}team2`}
+                    defaultValue={existing?.team2Games ?? ""}
+                    disabled={round.status === "VALIDATED"}
+                    className="w-14 h-10 text-center border border-slate-200 rounded-lg disabled:bg-slate-50 disabled:text-slate-400"
+                  />
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-slate-400">
+              Riposano: {round.restingNumbers.map(name).join(", ")}
+            </p>
+
+            {round.status !== "VALIDATED" && (
+              <div className="flex items-center gap-3 pt-1">
                 <button
                   type="submit"
-                  formAction={validateRoundAction}
-                  className="bg-primary hover:bg-primary-dark text-white rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer"
+                  className="bg-slate-900 hover:bg-slate-800 text-white rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer"
                 >
-                  Convalida turno
+                  Salva risultato
                 </button>
-              )}
-            </div>
-          )}
-        </form>
+                {round.match.winnerTeam !== null && (
+                  <button
+                    type="submit"
+                    formAction={validateRoundAction}
+                    className="bg-primary hover:bg-primary-dark text-white rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer"
+                  >
+                    Convalida turno
+                  </button>
+                )}
+              </div>
+            )}
+          </form>
+        </div>
       )}
     </div>
   );

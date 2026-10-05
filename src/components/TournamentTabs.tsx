@@ -19,18 +19,22 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "statistiche", label: "Statistiche" },
 ];
 
+import { Court } from "@/lib/types";
+
 export function TournamentTabs({
   tournament,
   standings,
   stats,
   numberToName,
   isAdmin = false,
+  courts = [],
 }: {
   tournament: Tournament;
   standings: PlayerStanding[];
   stats: TournamentStats;
   numberToName: Map<number, string>;
   isAdmin?: boolean;
+  courts?: Court[];
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("partite");
 
@@ -66,6 +70,7 @@ export function TournamentTabs({
                 round={round}
                 numberToName={numberToName}
                 isActive={round.roundNumber === tournament.currentRoundNumber}
+                courts={courts}
               />
             ))}
         </div>

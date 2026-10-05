@@ -24,9 +24,14 @@ export function MobileNav({
         Giocatori
       </Link>
       {isAdmin && (
-        <Link href="/users" onClick={close} className="font-medium text-slate-600 hover:text-primary">
-          Utenti
-        </Link>
+        <>
+          <Link href="/users" onClick={close} className="font-medium text-slate-600 hover:text-primary">
+            Utenti
+          </Link>
+          <Link href="/courts" onClick={close} className="font-medium text-slate-600 hover:text-primary">
+            Campi
+          </Link>
+        </>
       )}
       <Link href="/profile" onClick={close} className="font-medium text-slate-600 hover:text-primary">
         Profilo

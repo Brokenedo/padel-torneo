@@ -10,6 +10,7 @@ import { AuthUser, Player, Tournament, TournamentPlayer, Round } from "../../typ
 interface MockStore {
   users: AuthUser[];
   players: Player[];
+  courts: import("../../types").Court[];
   tournaments: Tournament[];
   auditLogs: MockAuditLog[];
 }
@@ -73,6 +74,7 @@ function seed(): MockStore {
       team2Numbers: [2, 4],
       sets: [],
       winnerTeam: null,
+      courtId: null,
     },
   };
 
@@ -105,7 +107,7 @@ function seed(): MockStore {
     },
   ];
 
-  return { users, players, tournaments, auditLogs: [] };
+  return { users, players, courts: [], tournaments, auditLogs: [] };
 }
 
 export function getMockStore(): MockStore {

@@ -59,6 +59,12 @@ export interface DataRepository {
   /** Elimina il giocatore: lancia un errore se non esiste o partecipa ad almeno un torneo. */
   deletePlayer(id: string): Promise<void>;
 
+  // Campi (Courts)
+  listCourts(): Promise<import("../types").Court[]>;
+  createCourt(name: string): Promise<import("../types").Court>;
+  deleteCourt(id: string): Promise<void>;
+  updateMatchCourt(matchId: string, courtId: string | null): Promise<void>;
+
   listTournaments(): Promise<Tournament[]>;
   getActiveTournament(): Promise<Tournament | null>;
   getTournamentById(id: string): Promise<Tournament | null>;

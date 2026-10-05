@@ -155,6 +155,49 @@ export async function deletePlayerAction(playerId: string): Promise<{ error: str
   return { error: null };
 }
 
+export async function createCourtAction(formData: FormData): Promise<{ error: string | null }> {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") return { error: "Non autorizzato" };
+
+  const name = formData.get("name")?.toString().trim();
+  if (!name) return { error: "Il nome del campo e' obbligatorio" };
+
+  try {
+    await getRepository().createCourt(name);
+    revalidatePath("/courts");
+    return { error: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Errore generico" };
+  }
+}
+
+export async function deleteCourtAction(id: string): Promise<{ error: string | null }> {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") return { error: "Non autorizzato" };
+
+  try {
+    await getRepository().deleteCourt(id);
+    revalidatePath("/courts");
+    return { error: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Errore generico" };
+  }
+}
+
+export async function updateMatchCourtAction(matchId: string, courtId: string | null): Promise<{ error: string | null }> {
+  // Qualsiasi utente loggato puo' impostare il campo
+  const session = await auth();
+  if (!session?.user) return { error: "Non autenticato" };
+
+  try {
+    await getRepository().updateMatchCourt(matchId, courtId);
+    revalidatePath(`/tournaments/[id]`, 'page');
+    return { error: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Errore generico" };
+  }
+}
+
 const createUserSchema = z.object({
   username: z.string().trim().min(2, "Lo username deve avere almeno 2 caratteri"),
   email: z.string().trim().email("Email non valida"),

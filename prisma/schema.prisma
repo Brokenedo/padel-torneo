@@ -112,10 +112,12 @@ model Match {
   team1Numbers Int[]
   team2Numbers Int[]
 
-  winnerTeam Int? // 1 oppure 2, valorizzato quando il match è concluso
+  winnerTeam Int?
+  courtId    String?
 
   round Round     @relation(fields: [roundId], references: [id], onDelete: Cascade)
   sets  MatchSet[]
+  court Court?    @relation(fields: [courtId], references: [id])
 }
 
 model MatchSet {
@@ -151,3 +153,11 @@ model AuditLog {
   @@index([createdAt])
   @@index([entityType, entityId])
 }
+
+model Court {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  matches   Match[]
+}
+

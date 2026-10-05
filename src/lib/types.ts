@@ -29,6 +29,12 @@ export interface SetScore {
   team2Games: number;
 }
 
+export interface Court {
+  id: string;
+  name: string;
+  createdAt: Date;
+}
+
 export interface Match {
   id: string;
   roundId: string;
@@ -36,6 +42,8 @@ export interface Match {
   team2Numbers: [number, number];
   sets: SetScore[];
   winnerTeam: 1 | 2 | null;
+  courtId: string | null;
+  court?: Court | null;
 }
 
 export interface Round {

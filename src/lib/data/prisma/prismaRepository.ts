@@ -58,6 +58,7 @@ function mapMatch(m: (PrismaMatch & { sets: PrismaMatchSet[] }) | null): Match |
     team2Numbers: [m.team2Numbers[0], m.team2Numbers[1]],
     sets: mapSets(m.sets),
     winnerTeam: (m.winnerTeam as 1 | 2 | null) ?? null,
+    courtId: m.courtId,
   };
 }
 
@@ -230,6 +231,37 @@ export class PrismaRepository implements DataRepository {
     }
     await prisma.player.delete({ where: { id } });
     after(() => syncPlayerDeleted(id));
+  }
+
+  async listCourts(): Promise<import("../../types").Court[]> {
+    return prisma.court.findMany({ orderBy: { name: "asc" } });
+  }
+
+  async createCourt(name: string): Promise<import("../../types").Court> {
+    const existing = await prisma.court.findFirst({
+      where: { name: { equals: name, mode: "insensitive" } },
+    });
+    if (existing) throw new Error("Esiste gia' un campo con questo nome");
+    return prisma.court.create({ data: { name } });
+  }
+
+  async deleteCourt(id: string): Promise<void> {
+    const court = await prisma.court.findUnique({
+      where: { id },
+      include: { _count: { select: { matches: true } } },
+    });
+    if (!court) throw new Error("Campo non trovato");
+    if (court._count.matches > 0) {
+      throw new Error("Il campo e' in uso e non puo' essere eliminato");
+    }
+    await prisma.court.delete({ where: { id } });
+  }
+
+  async updateMatchCourt(matchId: string, courtId: string | null): Promise<void> {
+    await prisma.match.update({
+      where: { id: matchId },
+      data: { courtId },
+    });
   }
 
   async listTournaments(): Promise<Tournament[]> {

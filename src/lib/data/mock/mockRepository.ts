@@ -152,6 +152,49 @@ export class MockRepository implements DataRepository {
     store.players.splice(idx, 1);
   }
 
+  async listCourts(): Promise<import("../../types").Court[]> {
+    const store = getMockStore();
+    return clone(store.courts).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async createCourt(name: string): Promise<import("../../types").Court> {
+    const store = getMockStore();
+    if (store.courts.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
+      throw new Error("Esiste gia' un campo con questo nome");
+    }
+    const court = { id: crypto.randomUUID(), name, createdAt: new Date() };
+    store.courts.push(court);
+    return clone(court);
+  }
+
+  async deleteCourt(id: string): Promise<void> {
+    const store = getMockStore();
+    const idx = store.courts.findIndex((c) => c.id === id);
+    if (idx === -1) throw new Error("Campo non trovato");
+    
+    // Check if in use
+    const inUse = store.tournaments.some((t) =>
+      t.rounds.some((r) => r.match?.courtId === id)
+    );
+    if (inUse) {
+      throw new Error("Il campo e' in uso in uno o piu' tornei");
+    }
+    store.courts.splice(idx, 1);
+  }
+
+  async updateMatchCourt(matchId: string, courtId: string | null): Promise<void> {
+    const store = getMockStore();
+    for (const t of store.tournaments) {
+      for (const r of t.rounds) {
+        if (r.match?.id === matchId) {
+          r.match.courtId = courtId;
+          return;
+        }
+      }
+    }
+    throw new Error("Match non trovato");
+  }
+
   async listTournaments(): Promise<Tournament[]> {
     const store = getMockStore();
     return store.tournaments
@@ -222,6 +265,7 @@ export class MockRepository implements DataRepository {
           team2Numbers: generated.team2,
           sets: [],
           winnerTeam: null,
+          courtId: null,
         },
       };
     });

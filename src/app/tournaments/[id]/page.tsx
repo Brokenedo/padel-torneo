@@ -10,7 +10,8 @@ export default async function TournamentPage({ params }: { params: Promise<{ id:
 
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN";
+  const courts = await getRepository().listCourts();
 
-  return <TournamentOverview tournament={tournament} isAdmin={isAdmin} />;
+  return <TournamentOverview tournament={tournament} isAdmin={isAdmin} courts={courts} />;
 }
 
