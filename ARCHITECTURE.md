@@ -152,6 +152,7 @@ erDiagram
     TOURNAMENT ||--o{ ROUND : "pianifica"
     ROUND ||--o| MATCH : "ha"
     MATCH ||--o{ MATCH_SET : "composto da"
+    COURT ||--o{ MATCH : "ospita"
 
     ADMIN_USER {
         string id PK
@@ -202,9 +203,16 @@ erDiagram
     MATCH {
         string id PK
         string roundId FK "univoco, 1:1 con Round"
+        string courtId FK "opzionale, id del campo"
         int_array team1Numbers "2 numeri giocatore"
         int_array team2Numbers "2 numeri giocatore"
         int winnerTeam "1 | 2 | null"
+    }
+
+    COURT {
+        string id PK
+        string name "nome del campo"
+        datetime createdAt
     }
 
     MATCH_SET {

@@ -16,6 +16,7 @@ successivo cercando di bilanciare compagni, avversari e riposi.
 - **Algoritmo di Pairing**: Generazione calendario intelligente (`src/lib/pairing.ts`) per evitare doppioni di compagni, avversari e turni di riposo.
 - **Autenticazione e Area Riservata** (`/profile`): login con ruoli admin/utente; ogni utente puo' cambiare la propria password ed eliminare il proprio account (elimina anche il giocatore collegato; bloccato se partecipa a un torneo in corso o se e' l'ultimo admin).
 - **Gestione giocatori**: anagrafica giocatori; l'eliminazione e' riservata agli admin.
+- **Gestione Campi**: Gli admin possono configurare i campi di gioco (`/courts`). Qualsiasi utente autenticato puo' assegnare un campo a una partita all'interno del torneo.
 - **Statistiche (solo admin)**: matrici compagni/avversari con nomi e matrice degli scontri previsti per verificare che tutti si sfidino almeno una volta.
 - **Audit Log**: Tracciamento di ogni operazione di creazione/modifica/eliminazione nel database.
 - **Supporto PWA**: L'app può essere installata su smartphone e desktop. Il Service Worker aggiorna la cache dei file statici ad ogni nuovo rilascio.
