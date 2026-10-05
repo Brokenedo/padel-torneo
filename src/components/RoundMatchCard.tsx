@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { Round, Court } from "@/lib/types";
 import { submitResultAction, validateRoundAction, updateMatchCourtAction } from "@/app/actions";
 
@@ -41,14 +41,21 @@ export function RoundMatchCard({
 }) {
   const name = (n: number) => numberToName.get(n) ?? `#${n}`;
   const [isPending, startTransition] = useTransition();
+  const [selectedCourtId, setSelectedCourtId] = useState(round.match?.courtId ?? "");
 
-  function handleCourtChange(courtId: string) {
+  useEffect(() => {
+    setSelectedCourtId(round.match?.courtId ?? "");
+  }, [round.match?.courtId]);
+
+  function handleCourtSave() {
     if (!round.match) return;
     startTransition(async () => {
-      const res = await updateMatchCourtAction(round.match!.id, courtId || null);
+      const res = await updateMatchCourtAction(round.match!.id, selectedCourtId || null);
       if (res.error) alert(res.error);
     });
   }
+
+  const isCourtChanged = selectedCourtId !== (round.match?.courtId ?? "");
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-5 space-y-4">
@@ -65,17 +72,31 @@ export function RoundMatchCard({
         <div className="space-y-4">
           <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100">
             <span className="text-sm font-medium text-slate-700">Campo:</span>
-            <select
-              disabled={round.status === "VALIDATED" || isPending}
-              value={round.match.courtId ?? ""}
-              onChange={(e) => handleCourtChange(e.target.value)}
-              className="text-sm border border-slate-200 rounded-lg px-2 py-1 bg-white focus:ring-primary focus:border-primary disabled:opacity-50"
-            >
-              <option value="">Nessun campo</option>
-              {courts.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                disabled={round.status === "VALIDATED" || isPending}
+                value={selectedCourtId}
+                onChange={(e) => setSelectedCourtId(e.target.value)}
+                className="text-sm border border-slate-200 rounded-lg px-2 py-1 bg-white focus:ring-primary focus:border-primary disabled:opacity-50"
+              >
+                <option value="">Nessun campo</option>
+                {courts.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              {isCourtChanged && (
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={handleCourtSave}
+                  className="bg-primary hover:bg-primary-dark text-white text-xs font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-all cursor-pointer"
+                >
+                  {isPending ? "Salvataggio..." : "Salva"}
+                </button>
+              )}
+            </div>
           </div>
 
           <form action={submitResultAction} className="space-y-2">
