@@ -13,6 +13,7 @@ successivo cercando di bilanciare compagni, avversari e riposi.
 ## Funzionalità Principali
 
 - **Gestione Tornei e Turni**: Creazione tornei, inserimento risultati, avanzamento turni e classifica (3 modalità di punteggio).
+- **Ricerca e Filtro Partite Giocatore**: Possibilità di ricercare o selezionare un giocatore nel tab Partite per filtrare istantaneamente e visualizzare solo i match in cui gioca, con evidenziazione grafica e indicazione dei turni di riposo.
 - **Algoritmo di Pairing**: Generazione calendario intelligente (`src/lib/pairing.ts`) per evitare doppioni di compagni, avversari e turni di riposo.
 - **Autenticazione e Area Riservata** (`/profile`): login con ruoli admin/utente; ogni utente puo' cambiare la propria password ed eliminare il proprio account (elimina anche il giocatore collegato; bloccato se partecipa a un torneo in corso o se e' l'ultimo admin).
 - **Gestione giocatori**: anagrafica giocatori; l'eliminazione e' riservata agli admin.

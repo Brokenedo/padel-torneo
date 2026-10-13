@@ -31,15 +31,29 @@ function StatusBadge({ round }: { round: Round }) {
 export function RoundMatchCard({
   round,
   numberToName,
-  isActive,
   courts = [],
+  highlightPlayerNumbers,
 }: {
   round: Round;
   numberToName: Map<number, string>;
-  isActive: boolean;
+  isActive?: boolean;
   courts?: Court[];
+  highlightPlayerNumbers?: Set<number>;
 }) {
   const name = (n: number) => numberToName.get(n) ?? `#${n}`;
+
+  function renderPlayerName(num: number) {
+    const playerName = name(num);
+    const isHighlighted = highlightPlayerNumbers?.has(num);
+    if (!isHighlighted) {
+      return <span>{playerName}</span>;
+    }
+    return (
+      <span className="text-primary font-bold bg-primary/10 px-1 py-0.5 rounded">
+        {playerName}
+      </span>
+    );
+  }
   const [isPending, startTransition] = useTransition();
   const [selectedCourtId, setSelectedCourtId] = useState(round.match?.courtId ?? "");
 
@@ -111,8 +125,10 @@ export function RoundMatchCard({
                 </span>
               ))}
 
-              <span className="font-semibold text-slate-900 py-2">
-                {name(round.match.team1Numbers[0])} + {name(round.match.team1Numbers[1])}
+              <span className="font-semibold text-slate-900 py-2 inline-flex flex-wrap items-center gap-1">
+                {renderPlayerName(round.match.team1Numbers[0])}
+                <span className="text-slate-400 font-normal">+</span>
+                {renderPlayerName(round.match.team1Numbers[1])}
               </span>
               {SET_NUMBERS.map((n) => {
                 const existing = round.match!.sets.find((s) => s.setNumber === n);
@@ -132,8 +148,10 @@ export function RoundMatchCard({
 
               <div className="col-span-4 border-t border-slate-100" />
 
-              <span className="font-semibold text-slate-900 py-2">
-                {name(round.match.team2Numbers[0])} + {name(round.match.team2Numbers[1])}
+              <span className="font-semibold text-slate-900 py-2 inline-flex flex-wrap items-center gap-1">
+                {renderPlayerName(round.match.team2Numbers[0])}
+                <span className="text-slate-400 font-normal">+</span>
+                {renderPlayerName(round.match.team2Numbers[1])}
               </span>
               {SET_NUMBERS.map((n) => {
                 const existing = round.match!.sets.find((s) => s.setNumber === n);
@@ -153,7 +171,17 @@ export function RoundMatchCard({
             </div>
 
             <p className="text-xs text-slate-400">
-              Riposano: {round.restingNumbers.map(name).join(", ")}
+              Riposano:{" "}
+              {round.restingNumbers.map((num, idx) => (
+                <span key={num}>
+                  {idx > 0 && ", "}
+                  {highlightPlayerNumbers?.has(num) ? (
+                    <span className="text-primary font-bold underline">{name(num)}</span>
+                  ) : (
+                    name(num)
+                  )}
+                </span>
+              ))}
             </p>
 
             {round.status !== "VALIDATED" && (
