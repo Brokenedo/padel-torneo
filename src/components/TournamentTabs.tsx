@@ -35,17 +35,16 @@ export function TournamentTabs({
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("partite");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPlayerNumber, setSelectedPlayerNumber] = useState<number | null>(null);
+  const [selectedPlayerNumber, setSelectedPlayerNumber] = useState<number[]>([]);
 
   const clearFilter = () => {
     setSearchQuery("");
-    setSelectedPlayerNumber(null);
+    setSelectedPlayerNumber([]);
   };
 
   const activeFilteredPlayers = useMemo(() => {
-    if (selectedPlayerNumber !== null) {
-      const p = tournament.players.find((pl) => pl.number === selectedPlayerNumber);
-      return p ? [p] : [];
+    if (selectedPlayerNumber.length > 0) {
+      return tournament.players.filter((pl) => selectedPlayerNumber.includes(pl.number));
     }
     const q = searchQuery.trim().toLowerCase();
     if (q.length > 0) {
@@ -135,7 +134,7 @@ export function TournamentTabs({
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  setSelectedPlayerNumber(null);
+                  setSelectedPlayerNumber([]);
                 }}
                 className="w-full pl-10 pr-10 py-2 sm:py-2.5 text-sm bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition"
               />
@@ -173,20 +172,18 @@ export function TournamentTabs({
                 .slice()
                 .sort((a, b) => a.number - b.number)
                 .map((p) => {
-                  const isSelected =
-                    selectedPlayerNumber === p.number ||
-                    (activeFilteredPlayers?.length === 1 && activeFilteredPlayers[0].number === p.number);
+                  const isSelected = selectedPlayerNumber.includes(p.number);
                   return (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => {
-                        if (isSelected) {
-                          clearFilter();
-                        } else {
-                          setSelectedPlayerNumber(p.number);
-                          setSearchQuery("");
-                        }
+                        setSearchQuery("");
+                        setSelectedPlayerNumber((prev) =>
+                          prev.includes(p.number)
+                            ? prev.filter((n) => n !== p.number)
+                            : [...prev, p.number]
+                        );
                       }}
                       className={`px-3 py-1.5 rounded-full shrink-0 font-medium transition cursor-pointer inline-flex items-center gap-1.5 text-xs ${
                         isSelected
@@ -239,7 +236,7 @@ export function TournamentTabs({
                 <div className="bg-white border border-primary/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                   <div>
                     <span className="font-semibold text-slate-900 text-sm">
-                      Giocatori trovati ({activeFilteredPlayers.length}):
+                      Giocatori ({activeFilteredPlayers.length}):
                     </span>{" "}
                     <span className="text-slate-600 font-medium text-sm">
                       {filteredRounds.length} {filteredRounds.length === 1 ? "partita trovata" : "partite trovate"}
