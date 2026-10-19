@@ -71,6 +71,11 @@ export function TournamentTabs({
       if (!round.match) return false;
       const t1 = round.match.team1Numbers;
       const t2 = round.match.team2Numbers;
+      if (filterPlayerNumbers.size > 4) {
+        const pairSelected = (t: number[]) =>
+          filterPlayerNumbers.has(t[0]) && filterPlayerNumbers.has(t[1]);
+        return pairSelected(t1) || pairSelected(t2);
+      }
       return (
         filterPlayerNumbers.has(t1[0]) ||
         filterPlayerNumbers.has(t1[1]) ||
